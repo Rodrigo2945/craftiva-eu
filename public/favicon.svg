@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Círculo laranja de fundo -->
+  <circle cx="50" cy="50" r="48" fill="#ea580c"/>
+  
+  <!-- Letra C estilizada em branco -->
+  <path d="M 70 50 
+           A 20 20 0 1 0 30 50
+           M 35 50
+           A 15 15 0 1 1 65 50" 
+        fill="none" 
+        stroke="white" 
+        stroke-width="8" 
+        stroke-linecap="round"/>
+  
+  <!-- Ponto artesanal -->
+  <circle cx="68" cy="32" r="4" fill="white"/>
+</svg>

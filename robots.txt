@@ -1,0 +1,13 @@
+# Craftiva.eu robots.txt
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /messages
+Disallow: /admin
+
+# Sitemaps
+Sitemap: https://craftiva.eu/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1

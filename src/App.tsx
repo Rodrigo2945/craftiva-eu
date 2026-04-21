@@ -13,6 +13,7 @@ import { UserProfilePage } from './components/UserProfilePage';
 import { WishlistPage } from './components/WishlistPage';
 import { BlogPage } from './components/BlogPage';
 import { TermsPage } from './components/TermsPage';
+import { Homepage } from './components/Homepage';
 import { Logo } from './components/Logo';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe } from 'lucide-react';
@@ -129,7 +130,8 @@ function AppContent() {
 
       <main>
         <Routes>
-          <Route path="/" element={<ProductList />} />
+          <Route path="/" element={<Homepage />} />
+          <Route path="/products" element={<ProductList />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/seller/:id" element={<SellerProfile />} />
           <Route path="/login" element={<AuthForm mode="login" />} />

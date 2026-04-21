@@ -2,9 +2,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAnalytics, logEvent } from 'firebase/analytics';
+import { getAnalytics } from 'firebase/analytics';
 
-// Firebase configuration from environment variables
+// Firebase configuration - APENAS para backend (Auth, Database, Storage)
+// Deploy é feito via GitHub Pages
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,7 +16,6 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
@@ -26,12 +26,16 @@ export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : nul
 // Helper functions for analytics tracking
 export const trackEvent = (eventName: string, params?: Record<string, any>) => {
   if (analytics) {
-    logEvent(analytics, eventName, params);
+    import('firebase/analytics').then(({ logEvent }) => {
+      logEvent(analytics, eventName, params);
+    });
   }
 };
 
 export const trackPageView = (pageName: string) => {
   if (analytics) {
-    logEvent(analytics, 'page_view', { page_name: pageName });
+    import('firebase/analytics').then(({ logEvent }) => {
+      logEvent(analytics, 'page_view', { page_name: pageName });
+    });
   }
 };

@@ -10,6 +10,16 @@ import { User, MapPin, Calendar, Package, Star, MessageSquare, ChevronRight, Pal
 import { format } from 'date-fns';
 import { pt, es, enUS } from 'date-fns/locale';
 
+function safeExternalUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
 export const SellerProfile: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
@@ -53,6 +63,61 @@ export const SellerProfile: React.FC = () => {
     fetchSeller();
     return () => unsubscribe();
   }, [id]);
+
+  useEffect(() => {
+    if (!seller || !id) return;
+
+    const originalTitle = document.title;
+    const bio = (seller.story || seller.bio || '').slice(0, 160);
+    const canonical = `https://craftiva.eu/seller/${id}`;
+
+    document.title = `${seller.displayName} | Craftiva`;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(selector.includes('property') ? 'property' : 'name', selector.match(/["']([^"']+)["']/)?.[1] ?? '');
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+
+    if (bio) setMeta('meta[name="description"]', 'content', bio);
+    setMeta('meta[property="og:title"]', 'content', seller.displayName);
+    if (bio) setMeta('meta[property="og:description"]', 'content', bio);
+    if (seller.photoURL) setMeta('meta[property="og:image"]', 'content', seller.photoURL);
+
+    let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const createdCanonical = !canonicalEl;
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.rel = 'canonical';
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.href = canonical;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: seller.displayName,
+      ...(bio && { description: bio }),
+      ...(seller.photoURL && { image: seller.photoURL }),
+      url: canonical,
+    };
+    const scriptEl = document.createElement('script');
+    scriptEl.type = 'application/ld+json';
+    scriptEl.id = 'seller-schema';
+    scriptEl.textContent = JSON.stringify(schema);
+    document.querySelector('#seller-schema')?.remove();
+    document.head.appendChild(scriptEl);
+
+    return () => {
+      document.title = originalTitle;
+      document.querySelector('#seller-schema')?.remove();
+      if (createdCanonical) canonicalEl?.remove();
+    };
+  }, [seller, id]);
 
   if (loading) return <div className="max-w-7xl mx-auto p-8 animate-pulse text-center">{t('seller.loading')}</div>;
   if (!seller) return <div className="max-w-7xl mx-auto p-8 text-center">{t('seller.notFound')}</div>;
@@ -123,18 +188,18 @@ export const SellerProfile: React.FC = () => {
               <div className="mt-8 pt-8 border-t border-gray-50">
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">{t('seller.socialLinks')}</h3>
                 <div className="flex gap-4">
-                  {seller.socialLinks.instagram && (
-                    <a href={`https://instagram.com/${seller.socialLinks.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                  {seller.socialLinks.instagram && safeExternalUrl(`https://instagram.com/${seller.socialLinks.instagram.replace('@', '')}`) && (
+                    <a href={safeExternalUrl(`https://instagram.com/${seller.socialLinks.instagram.replace('@', '')}`)!} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
                       <Instagram size={20} />
                     </a>
                   )}
-                  {seller.socialLinks.facebook && (
-                    <a href={`https://${seller.socialLinks.facebook}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                  {seller.socialLinks.facebook && safeExternalUrl(seller.socialLinks.facebook) && (
+                    <a href={safeExternalUrl(seller.socialLinks.facebook)!} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
                       <Facebook size={20} />
                     </a>
                   )}
-                  {seller.socialLinks.website && (
-                    <a href={`https://${seller.socialLinks.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                  {seller.socialLinks.website && safeExternalUrl(seller.socialLinks.website) && (
+                    <a href={safeExternalUrl(seller.socialLinks.website)!} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
                       <Globe size={20} />
                     </a>
                   )}

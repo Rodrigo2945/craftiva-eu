@@ -89,6 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             referrerPolicy="no-referrer"
+            loading="lazy"
           />
           <div className="absolute top-3 right-3 flex flex-col gap-2">
             <span className="bg-white/90 backdrop-blur-sm text-orange-600 px-3 py-1 rounded-full text-sm font-bold shadow-sm">

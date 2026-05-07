@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public read for product listing; write only by the seller who owns the product
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.sellerId == request.auth.uid;
+    }
+
+    // Users: public profile read; only the owner can write
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Wishlist: only the owner can read or write their own wishlist
+      match /wishlist/{itemId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Messages: only participants (sender or receiver) can read/write
+    match /messages/{messageId} {
+      allow read: if request.auth != null
+        && (resource.data.senderId == request.auth.uid
+            || resource.data.receiverId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Reviews: public read; authenticated users can create (one per product enforced app-side)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.buyerId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.buyerId == request.auth.uid;
+    }
+  }
+}

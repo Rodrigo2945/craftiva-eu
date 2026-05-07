@@ -133,11 +133,12 @@ export const BlogPage: React.FC = () => {
             className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col"
           >
             <div className="aspect-video overflow-hidden relative">
-              <img 
-                src={post.image} 
-                alt={t(post.title)} 
+              <img
+                src={post.image}
+                alt={t(post.title)}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
               <div className="absolute top-4 left-4">
                 <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-600 shadow-sm">

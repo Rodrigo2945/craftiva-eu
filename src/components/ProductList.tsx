@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
@@ -58,16 +58,15 @@ export const ProductList: React.FC = () => {
     };
   }, []);
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredProducts = useMemo(() => products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          p.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSeller = p.sellerName.toLowerCase().includes(sellerSearchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
     const matchesCustomizable = customizableOnly ? p.isCustomizable === true : true;
     const matchesMaterial = materialSearch === '' || (p.materials && p.materials.some(m => m.toLowerCase().includes(materialSearch.toLowerCase())));
-    
     return matchesSearch && matchesSeller && matchesCategory && matchesCustomizable && matchesMaterial;
-  });
+  }), [products, searchTerm, sellerSearchTerm, selectedCategory, customizableOnly, materialSearch]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -249,7 +248,7 @@ export const ProductList: React.FC = () => {
               >
                 <div className="w-24 h-24 rounded-full bg-stone-100 mb-4 overflow-hidden border-4 border-white shadow-sm">
                   {artisan.photoURL ? (
-                    <img src={artisan.photoURL} alt={artisan.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={artisan.photoURL} alt={artisan.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-stone-400">
                       <User size={32} />

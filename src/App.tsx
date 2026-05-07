@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth';
 import { Navbar } from './components/Navbar';
-import { ProductList } from './components/ProductList';
-import { ProductDetails } from './components/ProductDetails';
-import { VendorDashboard } from './components/VendorDashboard';
-import { Chat } from './components/Chat';
-import { AuthForm } from './components/AuthForm';
-import { SellerProfile } from './components/SellerProfile';
-import { UserProfilePage } from './components/UserProfilePage';
-import { WishlistPage } from './components/WishlistPage';
-import { BlogPage } from './components/BlogPage';
-import { TermsPage } from './components/TermsPage';
 import { Logo } from './components/Logo';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe } from 'lucide-react';
+
+const ProductList = lazy(() => import('./components/ProductList').then(m => ({ default: m.ProductList })));
+const ProductDetails = lazy(() => import('./components/ProductDetails').then(m => ({ default: m.ProductDetails })));
+const VendorDashboard = lazy(() => import('./components/VendorDashboard').then(m => ({ default: m.VendorDashboard })));
+const Chat = lazy(() => import('./components/Chat').then(m => ({ default: m.Chat })));
+const AuthForm = lazy(() => import('./components/AuthForm').then(m => ({ default: m.AuthForm })));
+const SellerProfile = lazy(() => import('./components/SellerProfile').then(m => ({ default: m.SellerProfile })));
+const UserProfilePage = lazy(() => import('./components/UserProfilePage').then(m => ({ default: m.UserProfilePage })));
+const WishlistPage = lazy(() => import('./components/WishlistPage').then(m => ({ default: m.WishlistPage })));
+const BlogPage = lazy(() => import('./components/BlogPage').then(m => ({ default: m.BlogPage })));
+const TermsPage = lazy(() => import('./components/TermsPage').then(m => ({ default: m.TermsPage })));
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
@@ -128,6 +129,7 @@ function AppContent() {
       </AnimatePresence>
 
       <main>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center text-stone-400">{t('common.loading')}</div>}>
         <Routes>
           <Route path="/" element={<ProductList />} />
           <Route path="/product/:id" element={<ProductDetails />} />
@@ -169,6 +171,7 @@ function AppContent() {
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/terms" element={<TermsPage />} />
         </Routes>
+        </Suspense>
       </main>
 
       <footer className="bg-white border-t border-gray-100 py-12 mt-20">

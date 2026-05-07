@@ -70,6 +70,68 @@ export const ProductDetails: React.FC = () => {
     fetchProduct();
   }, [id]);
 
+  useEffect(() => {
+    if (!product || !id) return;
+
+    const originalTitle = document.title;
+    const desc = product.description.slice(0, 160);
+    const image = product.images[0] || '';
+    const canonical = `https://craftiva.eu/product/${id}`;
+
+    document.title = `${product.name} | Craftiva`;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(selector.includes('property') ? 'property' : 'name', selector.match(/["']([^"']+)["']/)?.[1] ?? '');
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+
+    setMeta('meta[name="description"]', 'content', desc);
+    setMeta('meta[property="og:title"]', 'content', product.name);
+    setMeta('meta[property="og:description"]', 'content', desc);
+    if (image) setMeta('meta[property="og:image"]', 'content', image);
+
+    let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const createdCanonical = !canonicalEl;
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.rel = 'canonical';
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.href = canonical;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description,
+      image: product.images,
+      offers: {
+        '@type': 'Offer',
+        price: product.price.toFixed(2),
+        priceCurrency: 'EUR',
+        availability: product.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+      },
+      seller: { '@type': 'Person', name: product.sellerName },
+    };
+    const scriptEl = document.createElement('script');
+    scriptEl.type = 'application/ld+json';
+    scriptEl.id = 'product-schema';
+    scriptEl.textContent = JSON.stringify(schema);
+    document.querySelector('#product-schema')?.remove();
+    document.head.appendChild(scriptEl);
+
+    return () => {
+      document.title = originalTitle;
+      document.querySelector('#product-schema')?.remove();
+      if (createdCanonical) canonicalEl?.remove();
+    };
+  }, [product, id]);
+
   if (loading) return <div className="max-w-7xl mx-auto p-8 animate-pulse">{t('common.loading')}</div>;
   if (!product) return <div className="max-w-7xl mx-auto p-8">{t('product.notFound')}</div>;
 
@@ -98,10 +160,11 @@ export const ProductDetails: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                src={product.images[activeImage]} 
-                alt={product.name} 
+                src={product.images[activeImage]}
+                alt={product.name}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
             </AnimatePresence>
           </div>
@@ -112,7 +175,7 @@ export const ProductDetails: React.FC = () => {
                 onClick={() => setActiveImage(i)}
                 className={`aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${activeImage === i ? 'border-orange-600 scale-95 shadow-lg' : 'border-stone-100 hover:border-orange-200'}`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
               </div>
             ))}
           </div>

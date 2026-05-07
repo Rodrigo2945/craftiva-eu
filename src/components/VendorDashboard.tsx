@@ -168,12 +168,20 @@ export const VendorDashboard: React.FC = () => {
 
   const toggleStatus = async (id: string, currentStatus: ProductStatus) => {
     const newStatus = currentStatus === 'active' ? 'sold' : 'active';
-    await updateDoc(doc(db, 'products', id), { status: newStatus });
+    try {
+      await updateDoc(doc(db, 'products', id), { status: newStatus });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+    }
   };
 
   const deleteProduct = async (id: string) => {
     if (window.confirm(t('vendor.confirmDelete'))) {
-      await deleteDoc(doc(db, 'products', id));
+      try {
+        await deleteDoc(doc(db, 'products', id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+      }
     }
   };
 

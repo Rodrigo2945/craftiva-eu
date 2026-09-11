@@ -1,2 +1,0 @@
-# Craftiva.eu - Production Ready
-

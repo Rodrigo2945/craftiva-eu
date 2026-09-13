@@ -35,15 +35,19 @@ export const getStorageLazy = async (): Promise<FirebaseStorage> => {
 // Analytics sets cookies, which under ePrivacy needs opt-in consent BEFORE it
 // runs. It therefore stays off until something records consent, and no consent
 // UI exists yet — so today this never initialises.
-const ANALYTICS_CONSENT_KEY = 'craftiva.analyticsConsent';
+export const ANALYTICS_CONSENT_KEY = 'craftiva.analyticsConsent';
 
-export const hasAnalyticsConsent = (): boolean => {
+// null means the visitor has not decided yet, which is treated as refusal.
+export const readAnalyticsConsent = (): 'granted' | 'denied' | null => {
   try {
-    return window.localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'granted';
+    const stored = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
+    return stored === 'granted' || stored === 'denied' ? stored : null;
   } catch {
-    return false;
+    return null;
   }
 };
+
+export const hasAnalyticsConsent = (): boolean => readAnalyticsConsent() === 'granted';
 
 let analyticsInstance: Analytics | null = null;
 const getAnalyticsLazy = async (): Promise<Analytics | null> => {

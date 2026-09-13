@@ -160,6 +160,15 @@ i18n
             bio: 'Biografia',
             bioPlaceholder: 'Conta um pouco sobre ti ou sobre a tua loja...',
             nameHint: 'O nome é gerido pela tua conta Google/Registo',
+            data: {
+              title: 'Os teus dados',
+              description: 'Podes descarregar uma cópia de tudo o que guardamos sobre ti, ou eliminar a tua conta. Eliminar apaga o teu perfil e as tuas peças de forma definitiva. As mensagens que trocaste continuam visíveis para a outra pessoa da conversa, e as avaliações que escreveste ficam sem o teu nome.',
+              export: 'Descarregar os meus dados',
+              delete: 'Eliminar a minha conta',
+              deleteConfirm: 'Isto elimina a tua conta, o teu perfil e todas as tuas peças de forma definitiva. Não há forma de recuperar. Tens a certeza?',
+              deleteFailed: 'Não foi possível eliminar a conta. Confirma a tua identidade na janela da Google e tenta de novo.',
+              exportFailed: 'Não foi possível preparar os teus dados. Tenta de novo.',
+            },
             changeRole: 'Mudar papel para:',
             save: 'Guardar Alterações',
             saved: 'Guardado',
@@ -339,6 +348,53 @@ i18n
                 content: 'Estes Termos serão regidos e interpretados de acordo com as leis da União Europeia e do país de registo da CRAFTIVA.EU. Qualquer litígio que surja em relação a estes termos estará sujeito à jurisdição exclusiva dos tribunais competentes.',
               },
             },
+          },
+          cookies: {
+            title: 'Cookies',
+            description: 'Usamos apenas o essencial para o site funcionar. Queres deixar-nos usar também estatísticas anónimas para perceber o que é mais visto?',
+            accept: 'Aceitar estatísticas',
+            decline: 'Só o essencial',
+            readMore: 'Saber mais',
+            change: 'Alterar preferências de cookies',
+          },
+          privacy: {
+            title: 'Política de Privacidade',
+            lastUpdated: 'Última atualização: 13 de setembro de 2026',
+            intro: 'Esta política explica que dados pessoais a Craftiva.eu recolhe, porquê, durante quanto tempo os guarda e que direitos tem sobre eles. Aplica-se a todas as pessoas que usam o site, em qualquer país.',
+            sections: {
+              controller: {
+                title: '1. Quem é responsável pelos seus dados',
+                content: 'O responsável pelo tratamento dos dados é a Craftiva.eu, contactável através de privacidade@craftiva.eu.\n\nSe tiver dúvidas sobre esta política ou quiser exercer algum dos seus direitos, use esse endereço — respondemos no prazo máximo de um mês, conforme exigido pelo RGPD.',
+              },
+              data_collected: {
+                title: '2. Que dados recolhemos',
+                content: 'Quando cria conta com a Google: nome, endereço de email e fotografia de perfil que a sua conta Google nos comunica.\n\nQuando preenche o seu perfil: biografia, história, especialidade, nome de loja e ligações para redes sociais.\n\nQuando publica peças: título, descrição, preço, materiais, localização indicada por si e fotografias que carrega.\n\nQuando fala com outro utilizador: o conteúdo das mensagens, o remetente, o destinatário e a data.\n\nQuando avalia uma peça: a classificação, o comentário e o seu nome.\n\nNão recolhemos dados de pagamento, porque a Craftiva não processa pagamentos.',
+              },
+              purposes: {
+                title: '3. Para que usamos os dados e com que fundamento',
+                content: 'Para lhe dar acesso à conta e manter a sessão iniciada — execução do contrato, artigo 6.º, n.º 1, alínea b) do RGPD.\n\nPara publicar o seu perfil e as suas peças e permitir que compradores o contactem — execução do contrato.\n\nPara verificar manualmente a página pública de Instagram ou Facebook que indica ao registar-se como artesão, e assim atribuir ou não o selo de verificado — interesse legítimo em manter a confiança no diretório, artigo 6.º, n.º 1, alínea f).\n\nPara estatísticas de utilização do site — apenas com o seu consentimento, artigo 6.º, n.º 1, alínea a), e só se o tiver aceite no aviso de cookies.',
+              },
+              sharing: {
+                title: '4. Com quem os dados são partilhados',
+                content: 'A Craftiva.eu não vende nem aluga dados pessoais a ninguém.\n\nO site funciona sobre o Firebase, da Google (autenticação, base de dados e armazenamento de ficheiros), que atua como subcontratante. Os dados podem ser tratados em servidores fora do Espaço Económico Europeu ao abrigo das cláusulas contratuais-tipo da Comissão Europeia.\n\nO seu perfil de artesão, as suas peças e as avaliações que escreve são públicos e visíveis para qualquer visitante. As mensagens privadas só são acessíveis a si e à pessoa com quem fala.',
+              },
+              retention: {
+                title: '5. Durante quanto tempo guardamos os dados',
+                content: 'Os dados da sua conta e do seu perfil são guardados enquanto a conta existir.\n\nSe eliminar a conta, apagamos o seu perfil e as suas peças de imediato. As mensagens trocadas podem permanecer visíveis para a outra pessoa da conversa, uma vez que também lhe pertencem.\n\nAs avaliações que escreveu podem ser mantidas sem o seu nome, para não distorcer a reputação de terceiros.',
+              },
+              rights: {
+                title: '6. Os seus direitos',
+                content: 'Tem direito a aceder aos seus dados, corrigi-los, apagá-los, limitar ou opor-se ao tratamento, e recebê-los num formato portável.\n\nA maior parte destes direitos pode exercê-los diretamente na página de perfil: pode editar os seus dados, descarregar uma cópia em formato JSON e eliminar a conta sem pedir autorização a ninguém.\n\nSe preferir, escreva para privacidade@craftiva.eu.\n\nTem também o direito de apresentar reclamação à autoridade de controlo do seu país. Em Portugal é a CNPD — Comissão Nacional de Proteção de Dados.',
+              },
+              cookies: {
+                title: '7. Cookies',
+                content: 'Usamos armazenamento local do navegador para o manter com sessão iniciada e para guardar o idioma escolhido e a sua decisão sobre cookies. Estes são estritamente necessários ao funcionamento do site e não dependem de consentimento.\n\nOs cookies de estatísticas (Google Analytics) só são instalados se os aceitar no aviso que aparece na primeira visita. Se recusar, ou se ignorar o aviso, não é instalado nenhum. Pode mudar de ideias a qualquer momento no fundo desta página.',
+              },
+              illegal_content: {
+                title: '8. Comunicar conteúdo ilegal',
+                content: 'Se encontrar no site um anúncio ou uma mensagem que considere ilegal — contrafação, fraude, conteúdo que viole direitos de terceiros — comunique para privacidade@craftiva.eu, identificando o endereço da página em causa e o motivo.\n\nAnalisamos todas as comunicações e informamos quem comunicou da decisão tomada. Este é o ponto de contacto previsto no Regulamento dos Serviços Digitais da União Europeia.',
+              },
+            },
           }
         }
       },
@@ -490,6 +546,15 @@ i18n
             bio: 'Biography',
             bioPlaceholder: 'Tell us a bit about yourself or your shop...',
             nameHint: 'The name is managed by your Google account/Registration',
+            data: {
+              title: 'Your data',
+              description: 'You can download a copy of everything we hold about you, or delete your account. Deleting removes your profile and your pieces permanently. Messages you exchanged stay visible to the other person in the conversation, and reviews you wrote are kept without your name.',
+              export: 'Download my data',
+              delete: 'Delete my account',
+              deleteConfirm: 'This permanently deletes your account, your profile and all your pieces. There is no way to undo it. Are you sure?',
+              deleteFailed: 'Could not delete the account. Confirm your identity in the Google window and try again.',
+              exportFailed: 'Could not prepare your data. Please try again.',
+            },
             changeRole: 'Change role to:',
             save: 'Save Changes',
             saved: 'Saved',
@@ -669,6 +734,53 @@ i18n
                 content: 'These Terms shall be governed by and construed in accordance with the laws of the European Union and the country of registration of CRAFTIVA.EU. Any dispute arising in connection with these terms shall be subject to the exclusive jurisdiction of the competent courts.',
               },
             },
+          },
+          cookies: {
+            title: 'Cookies',
+            description: 'We use only what the site needs to work. Would you also let us collect anonymous statistics to see what gets viewed most?',
+            accept: 'Accept statistics',
+            decline: 'Essential only',
+            readMore: 'Read more',
+            change: 'Change cookie preferences',
+          },
+          privacy: {
+            title: 'Privacy Policy',
+            lastUpdated: 'Last updated: 13 September 2026',
+            intro: 'This policy explains what personal data Craftiva.eu collects, why, how long it is kept and what rights you have over it. It applies to everyone who uses the site, in any country.',
+            sections: {
+              controller: {
+                title: '1. Who is responsible for your data',
+                content: 'The data controller is Craftiva.eu, reachable at privacidade@craftiva.eu.\n\nIf you have questions about this policy or want to exercise any of your rights, write to that address — we reply within one month at the latest, as the GDPR requires.',
+              },
+              data_collected: {
+                title: '2. What data we collect',
+                content: 'When you sign in with Google: the name, email address and profile picture your Google account gives us.\n\nWhen you fill in your profile: biography, story, craft speciality, shop name and links to social media.\n\nWhen you publish a piece: title, description, price, materials, the location you state and the photographs you upload.\n\nWhen you message another user: the message content, sender, recipient and date.\n\nWhen you review a piece: the rating, the comment and your name.\n\nWe collect no payment data, because Craftiva does not process payments.',
+              },
+              purposes: {
+                title: '3. Why we use the data, and on what basis',
+                content: 'To give you access to your account and keep you signed in — performance of a contract, Article 6(1)(b) GDPR.\n\nTo publish your profile and your pieces so that buyers can contact you — performance of a contract.\n\nTo manually check the public Instagram or Facebook page you give us when registering as an artisan, and decide whether to grant the verified badge — legitimate interest in keeping the directory trustworthy, Article 6(1)(f).\n\nFor site usage statistics — only with your consent, Article 6(1)(a), and only if you accepted it in the cookie notice.',
+              },
+              sharing: {
+                title: '4. Who the data is shared with',
+                content: 'Craftiva.eu does not sell or rent personal data to anyone.\n\nThe site runs on Google Firebase (authentication, database and file storage), acting as a processor. Data may be processed on servers outside the European Economic Area under the European Commission\'s standard contractual clauses.\n\nYour artisan profile, your pieces and the reviews you write are public and visible to any visitor. Private messages are accessible only to you and the person you are talking to.',
+              },
+              retention: {
+                title: '5. How long we keep the data',
+                content: 'Your account and profile data are kept for as long as the account exists.\n\nIf you delete your account, your profile and your pieces are removed immediately. Messages you exchanged may remain visible to the other person in the conversation, since they belong to them too.\n\nReviews you wrote may be kept without your name, so that other people\'s reputation is not distorted.',
+              },
+              rights: {
+                title: '6. Your rights',
+                content: 'You have the right to access your data, correct it, erase it, restrict or object to processing, and receive it in a portable format.\n\nMost of these you can exercise directly on your profile page: you can edit your data, download a copy as JSON and delete your account without asking anyone.\n\nIf you prefer, write to privacidade@craftiva.eu.\n\nYou also have the right to lodge a complaint with the supervisory authority in your country. In Portugal this is the CNPD.',
+              },
+              cookies: {
+                title: '7. Cookies',
+                content: 'We use browser storage to keep you signed in and to remember your chosen language and your cookie decision. These are strictly necessary for the site to work and do not require consent.\n\nStatistics cookies (Google Analytics) are only set if you accept them in the notice shown on your first visit. If you decline, or ignore the notice, none are set. You can change your mind at any time at the bottom of this page.',
+              },
+              illegal_content: {
+                title: '8. Reporting illegal content',
+                content: 'If you find a listing or a message on the site you believe is illegal — counterfeiting, fraud, content infringing someone\'s rights — report it to privacidade@craftiva.eu, giving the address of the page and the reason.\n\nWe review every report and tell the reporter what was decided. This is the point of contact required by the European Union Digital Services Act.',
+              },
+            },
           }
         }
       },
@@ -820,6 +932,15 @@ i18n
             bio: 'Biografía',
             bioPlaceholder: 'Cuéntanos un poco sobre ti o tu tienda...',
             nameHint: 'El nombre es gestionado por tu cuenta de Google/Registro',
+            data: {
+              title: 'Tus datos',
+              description: 'Puedes descargar una copia de todo lo que guardamos sobre ti, o eliminar tu cuenta. Eliminar borra tu perfil y tus piezas de forma definitiva. Los mensajes que intercambiaste siguen visibles para la otra persona de la conversación, y las valoraciones que escribiste se conservan sin tu nombre.',
+              export: 'Descargar mis datos',
+              delete: 'Eliminar mi cuenta',
+              deleteConfirm: 'Esto elimina tu cuenta, tu perfil y todas tus piezas de forma definitiva. No hay forma de recuperarlo. ¿Estás seguro?',
+              deleteFailed: 'No se pudo eliminar la cuenta. Confirma tu identidad en la ventana de Google e inténtalo de nuevo.',
+              exportFailed: 'No se pudieron preparar tus datos. Inténtalo de nuevo.',
+            },
             changeRole: 'Cambiar rol a:',
             save: 'Guardar Cambios',
             saved: 'Guardado',
@@ -997,6 +1118,53 @@ i18n
               governing_law: {
                 title: '8. Ley Aplicable y Jurisdicción',
                 content: 'Estos Términos se regirán e interpretarán de acuerdo con las leyes de la Unión Europea y el país de registro de CRAFTIVA.EU. Cualquier disputa que surja en relación con estos términos estará sujeta a la jurisdicción exclusiva de los tribunales competentes.',
+              },
+            },
+          },
+          cookies: {
+            title: 'Cookies',
+            description: 'Usamos solo lo esencial para que el sitio funcione. ¿Nos dejas recoger también estadísticas anónimas para saber qué se ve más?',
+            accept: 'Aceptar estadísticas',
+            decline: 'Solo lo esencial',
+            readMore: 'Saber más',
+            change: 'Cambiar preferencias de cookies',
+          },
+          privacy: {
+            title: 'Política de Privacidad',
+            lastUpdated: 'Última actualización: 13 de septiembre de 2026',
+            intro: 'Esta política explica qué datos personales recoge Craftiva.eu, por qué, durante cuánto tiempo los conserva y qué derechos tienes sobre ellos. Se aplica a todas las personas que usan el sitio, en cualquier país.',
+            sections: {
+              controller: {
+                title: '1. Quién es responsable de tus datos',
+                content: 'El responsable del tratamiento es Craftiva.eu, con contacto en privacidade@craftiva.eu.\n\nSi tienes dudas sobre esta política o quieres ejercer alguno de tus derechos, escribe a esa dirección — respondemos en el plazo máximo de un mes, como exige el RGPD.',
+              },
+              data_collected: {
+                title: '2. Qué datos recogemos',
+                content: 'Cuando creas cuenta con Google: nombre, dirección de correo y foto de perfil que nos comunica tu cuenta de Google.\n\nCuando completas tu perfil: biografía, historia, especialidad, nombre de tienda y enlaces a redes sociales.\n\nCuando publicas una pieza: título, descripción, precio, materiales, la ubicación que indicas y las fotografías que subes.\n\nCuando hablas con otro usuario: el contenido de los mensajes, el remitente, el destinatario y la fecha.\n\nCuando valoras una pieza: la puntuación, el comentario y tu nombre.\n\nNo recogemos datos de pago, porque Craftiva no procesa pagos.',
+              },
+              purposes: {
+                title: '3. Para qué usamos los datos y con qué fundamento',
+                content: 'Para darte acceso a tu cuenta y mantener la sesión iniciada — ejecución del contrato, artículo 6.1.b) del RGPD.\n\nPara publicar tu perfil y tus piezas y permitir que los compradores te contacten — ejecución del contrato.\n\nPara comprobar manualmente la página pública de Instagram o Facebook que indicas al registrarte como artesano, y decidir si concedemos el sello de verificado — interés legítimo en mantener la confianza en el directorio, artículo 6.1.f).\n\nPara estadísticas de uso del sitio — solo con tu consentimiento, artículo 6.1.a), y solo si lo has aceptado en el aviso de cookies.',
+              },
+              sharing: {
+                title: '4. Con quién se comparten los datos',
+                content: 'Craftiva.eu no vende ni alquila datos personales a nadie.\n\nEl sitio funciona sobre Firebase, de Google (autenticación, base de datos y almacenamiento de archivos), que actúa como encargado del tratamiento. Los datos pueden tratarse en servidores fuera del Espacio Económico Europeo al amparo de las cláusulas contractuales tipo de la Comisión Europea.\n\nTu perfil de artesano, tus piezas y las valoraciones que escribes son públicos y visibles para cualquier visitante. Los mensajes privados solo son accesibles para ti y para la persona con la que hablas.',
+              },
+              retention: {
+                title: '5. Durante cuánto tiempo conservamos los datos',
+                content: 'Los datos de tu cuenta y de tu perfil se conservan mientras la cuenta exista.\n\nSi eliminas la cuenta, borramos tu perfil y tus piezas de inmediato. Los mensajes intercambiados pueden seguir siendo visibles para la otra persona de la conversación, ya que también le pertenecen.\n\nLas valoraciones que escribiste pueden conservarse sin tu nombre, para no distorsionar la reputación de terceros.',
+              },
+              rights: {
+                title: '6. Tus derechos',
+                content: 'Tienes derecho a acceder a tus datos, corregirlos, borrarlos, limitar u oponerte al tratamiento, y recibirlos en un formato portable.\n\nLa mayoría puedes ejercerlos directamente en tu página de perfil: puedes editar tus datos, descargar una copia en formato JSON y eliminar la cuenta sin pedir permiso a nadie.\n\nSi lo prefieres, escribe a privacidade@craftiva.eu.\n\nTambién tienes derecho a presentar una reclamación ante la autoridad de control de tu país. En España es la AEPD.',
+              },
+              cookies: {
+                title: '7. Cookies',
+                content: 'Usamos almacenamiento local del navegador para mantener tu sesión iniciada y para guardar el idioma elegido y tu decisión sobre cookies. Son estrictamente necesarios para el funcionamiento del sitio y no dependen de consentimiento.\n\nLas cookies de estadísticas (Google Analytics) solo se instalan si las aceptas en el aviso que aparece en la primera visita. Si las rechazas, o ignoras el aviso, no se instala ninguna. Puedes cambiar de opinión en cualquier momento al final de esta página.',
+              },
+              illegal_content: {
+                title: '8. Comunicar contenido ilegal',
+                content: 'Si encuentras en el sitio un anuncio o un mensaje que consideres ilegal — falsificación, fraude, contenido que vulnere derechos de terceros — comunícalo a privacidade@craftiva.eu, indicando la dirección de la página en cuestión y el motivo.\n\nRevisamos todas las comunicaciones e informamos a quien las envía de la decisión tomada. Este es el punto de contacto previsto en el Reglamento de Servicios Digitales de la Unión Europea.',
               },
             },
           }

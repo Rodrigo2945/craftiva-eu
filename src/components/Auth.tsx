@@ -1,16 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  onAuthStateChanged, 
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
   signOut,
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  deleteUser,
+  reauthenticateWithPopup
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  Timestamp
+} from 'firebase/firestore';
 import i18n from '../i18n';
 import { UserProfile, UserRole } from '../types';
 import { LogIn, LogOut, User as UserIcon, Shield } from 'lucide-react';
@@ -51,6 +64,8 @@ export const AuthContext = React.createContext<{
   updateRole: (role: UserRole) => Promise<void>;
   updateLanguage: (lang: string) => Promise<void>;
   updateProfileData: (data: Partial<UserProfile>) => Promise<void>;
+  exportData: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }>({
   user: null,
   profile: null,
@@ -62,6 +77,8 @@ export const AuthContext = React.createContext<{
   updateRole: async () => {},
   updateLanguage: async () => {},
   updateProfileData: async () => {},
+  exportData: async () => {},
+  deleteAccount: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -181,8 +198,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(prev => prev ? { ...prev, ...data } : null);
   };
 
+  // GDPR Art. 20: everything we hold about this user, in a portable format.
+  const exportData = async () => {
+    if (!user) return;
+
+    const ownedBy = (field: string) =>
+      getDocs(query(collection(db, field === 'sellerId' ? 'products' : 'reviews'), where(field, '==', user.uid)));
+
+    const [profileSnap, products, reviews, sent, received, wishlist] = await Promise.all([
+      getDoc(doc(db, 'users', user.uid)),
+      ownedBy('sellerId'),
+      ownedBy('buyerId'),
+      getDocs(query(collection(db, 'messages'), where('senderId', '==', user.uid))),
+      getDocs(query(collection(db, 'messages'), where('receiverId', '==', user.uid))),
+      getDocs(collection(db, 'users', user.uid, 'wishlist')),
+    ]);
+
+    const contents = (snap: { docs: { id: string; data: () => unknown }[] }) =>
+      snap.docs.map(d => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      account: { uid: user.uid, email: user.email, displayName: user.displayName },
+      profile: profileSnap.exists() ? profileSnap.data() : null,
+      products: contents(products),
+      reviews: contents(reviews),
+      messages: [...contents(sent), ...contents(received)],
+      wishlist: contents(wishlist),
+    };
+
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `craftiva-dados-${user.uid}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // GDPR Art. 17. Reauthentication happens first so the account is never left
+  // half-deleted: Firebase refuses deleteUser on an old session.
+  const deleteAccount = async () => {
+    if (!user) return;
+
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+
+    const [products, reviews, wishlist] = await Promise.all([
+      getDocs(query(collection(db, 'products'), where('sellerId', '==', user.uid))),
+      getDocs(query(collection(db, 'reviews'), where('buyerId', '==', user.uid))),
+      getDocs(collection(db, 'users', user.uid, 'wishlist')),
+    ]);
+
+    await Promise.all([
+      ...products.docs.map(d => deleteDoc(d.ref)),
+      ...wishlist.docs.map(d => deleteDoc(d.ref)),
+      // Kept, but detached from a name, so other sellers' ratings stay intact.
+      ...reviews.docs.map(d => updateDoc(d.ref, { buyerName: '' })),
+    ]);
+
+    await deleteDoc(doc(db, 'users', user.uid));
+    await deleteUser(user);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signInEmail, signUpEmail, logout, updateRole, updateLanguage, updateProfileData }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signInEmail, signUpEmail, logout, updateRole, updateLanguage, updateProfileData, exportData, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

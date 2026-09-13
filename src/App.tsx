@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './components/Auth';
 import { Navbar } from './components/Navbar';
 import { Logo } from './components/Logo';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CookieConsent } from './components/CookieConsent';
+import { ANALYTICS_CONSENT_KEY } from './firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe } from 'lucide-react';
 
@@ -18,6 +20,7 @@ const UserProfilePage = lazy(() => import('./components/UserProfilePage').then(m
 const WishlistPage = lazy(() => import('./components/WishlistPage').then(m => ({ default: m.WishlistPage })));
 const BlogPage = lazy(() => import('./components/BlogPage').then(m => ({ default: m.BlogPage })));
 const TermsPage = lazy(() => import('./components/TermsPage').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('./components/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
@@ -86,6 +89,17 @@ function AppContent() {
   const { t } = useTranslation();
   const { profile, updateRole } = useAuth();
 
+  // Clearing the stored decision brings the consent banner back, which is how a
+  // visitor withdraws consent as easily as they gave it.
+  const resetCookieChoice = () => {
+    try {
+      window.localStorage.removeItem(ANALYTICS_CONSENT_KEY);
+    } catch {
+      // Nothing to clear if storage is unavailable.
+    }
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 font-sans selection:bg-orange-100 selection:text-orange-900">
       <Navbar />
@@ -128,6 +142,8 @@ function AppContent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CookieConsent />
 
       <main>
         <ErrorBoundary>
@@ -172,6 +188,7 @@ function AppContent() {
           />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
         </Suspense>
         </ErrorBoundary>
@@ -188,10 +205,15 @@ function AppContent() {
           <div className="flex items-center justify-center gap-6 text-sm font-bold text-gray-400">
             <Link to="/blog" className="hover:text-orange-600 transition-colors">{t('common.blog')}</Link>
             <Link to="/terms" className="hover:text-orange-600 transition-colors">{t('common.terms')}</Link>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.privacy')}</a>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.help')}</a>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.contact')}</a>
+            <Link to="/privacy" className="hover:text-orange-600 transition-colors">{t('common.privacy')}</Link>
+            <a href="mailto:privacidade@craftiva.eu" className="hover:text-orange-600 transition-colors">{t('common.contact')}</a>
           </div>
+          <button
+            onClick={resetCookieChoice}
+            className="mt-6 text-xs font-bold text-gray-300 hover:text-orange-600 transition-colors underline underline-offset-4"
+          >
+            {t('cookies.change')}
+          </button>
           <p className="text-gray-300 text-[10px] mt-12 uppercase tracking-widest font-black">
             © 2026 CRAFTIVA.EU Inc. {t('footer.copyright')}
           </p>

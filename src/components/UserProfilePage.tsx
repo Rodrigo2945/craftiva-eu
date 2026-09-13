@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './Auth';
 import { motion } from 'motion/react';
-import { User, Mail, Shield, Save, Loader2, CheckCircle2, Store, Phone, Palette, Instagram, Facebook, Globe } from 'lucide-react';
+import { User, Mail, Shield, Save, Loader2, CheckCircle2, Store, Palette, Instagram, Facebook, Globe, Download, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 
 export const UserProfilePage: React.FC = () => {
   const { t } = useTranslation();
-  const { user, profile, updateProfileData } = useAuth();
+  const { user, profile, updateProfileData, exportData, deleteAccount } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState<'profile' | 'becomeSeller'>('profile');
@@ -26,6 +26,36 @@ export const UserProfilePage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  const handleExport = async () => {
+    setDataError(null);
+    setExporting(true);
+    try {
+      await exportData();
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      setDataError(t('userProfile.data.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(t('userProfile.data.deleteConfirm'))) return;
+    setDataError(null);
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setDataError(t('userProfile.data.deleteFailed'));
+      setDeleting(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,6 +241,40 @@ export const UserProfilePage: React.FC = () => {
                   </button>
                 </div>
               </form>
+
+              <div className="mt-10 pt-8 border-t border-gray-100">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-2">
+                  {t('userProfile.data.title')}
+                </h3>
+                <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                  {t('userProfile.data.description')}
+                </p>
+
+                {dataError && (
+                  <p className="text-sm font-bold text-red-600 bg-red-50 px-4 py-3 rounded-xl mb-4">{dataError}</p>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={exporting || deleting}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  >
+                    {exporting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                    {t('userProfile.data.export')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={exporting || deleting}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                    {t('userProfile.data.delete')}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           ) : (
             <motion.div 

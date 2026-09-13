@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <title>Craftiva.eu</title>
+    <script>
+      // GitHub Pages serves this file for any path it cannot resolve. Encode the
+      // requested path into a query string and hand it back to index.html, which
+      // restores it before React Router mounts. Without this every deep link
+      // (/product/:id, /terms, anything in sitemap.xml) dies on GitHub's 404.
+      (function (l) {
+        l.replace(
+          l.protocol + '//' + l.host + '/?/' +
+          l.pathname.slice(1).replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      })(window.location);
+    </script>
+  </head>
+  <body></body>
+</html>

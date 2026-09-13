@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, query, where, orderBy, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Review } from '../types';
 import { Star, User, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,11 +30,18 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, selle
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const revs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-      setReviews(revs);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const revs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Review));
+        setReviews(revs);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('ProductReviews: listener failed', err);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [productId]);
@@ -49,7 +56,9 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, selle
     setSuccessMessage('');
 
     try {
-      await addDoc(collection(db, 'reviews'), {
+      // Fixed id so a buyer can only hold one review per product; the same
+      // constraint is enforced in firestore.rules rather than trusted here.
+      await setDoc(doc(db, 'reviews', `${currentUser.uid}_${productId}`), {
         productId,
         sellerId,
         buyerId: currentUser.uid,

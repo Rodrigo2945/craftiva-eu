@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
@@ -17,78 +17,137 @@ export const Chat: React.FC = () => {
   const [activeChat, setActiveChat] = useState<string | null>(searchParams.get('to'));
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [receiverProfile, setReceiverProfile] = useState<UserProfile | null>(null);
-  const [chats, setChats] = useState<{ userId: string; lastMessage: string; profile?: UserProfile }[]>([]);
+  const [sentMessages, setSentMessages] = useState<Message[]>([]);
+  const [receivedMessages, setReceivedMessages] = useState<Message[]>([]);
+  const [peerProfiles, setPeerProfiles] = useState<Record<string, UserProfile | null>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch chats list
+  // Two listeners rather than one: a conversation needs the messages we sent as
+  // well as the ones we received, and Firestore cannot OR across two fields.
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, 'messages'),
-      where('receiverId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    const subscribe = (
+      field: 'senderId' | 'receiverId',
+      setter: React.Dispatch<React.SetStateAction<Message[]>>
+    ) =>
+      onSnapshot(
+        query(collection(db, 'messages'), where(field, '==', user.uid), orderBy('createdAt', 'desc')),
+        snapshot => setter(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Message))),
+        error => console.error(`Chat: ${field} listener failed`, error)
+      );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const uniqueUsers = new Set<string>();
-      const chatList: any[] = [];
+    const unsubscribeSent = subscribe('senderId', setSentMessages);
+    const unsubscribeReceived = subscribe('receiverId', setReceivedMessages);
 
-      for (const d of snapshot.docs) {
-        const data = d.data() as Message;
-        if (!uniqueUsers.has(data.senderId)) {
-          uniqueUsers.add(data.senderId);
-          const userDoc = await getDoc(doc(db, 'users', data.senderId));
-          chatList.push({
-            userId: data.senderId,
-            lastMessage: data.text,
-            profile: userDoc.exists() ? userDoc.data() as UserProfile : undefined
-          });
-        }
-      }
-      setChats(chatList);
-    });
-
-    return () => unsubscribe();
+    return () => {
+      unsubscribeSent();
+      unsubscribeReceived();
+    };
   }, [user]);
 
-  // Fetch active chat messages
+  const chats = useMemo(() => {
+    if (!user) return [];
+
+    const latestPerPeer = new Map<string, Message>();
+    for (const message of [...sentMessages, ...receivedMessages]) {
+      const peerId = message.senderId === user.uid ? message.receiverId : message.senderId;
+      if (!peerId || peerId === user.uid) continue;
+      const current = latestPerPeer.get(peerId);
+      if (!current || message.createdAt.toMillis() > current.createdAt.toMillis()) {
+        latestPerPeer.set(peerId, message);
+      }
+    }
+
+    return [...latestPerPeer.entries()]
+      .sort(([, a], [, b]) => b.createdAt.toMillis() - a.createdAt.toMillis())
+      .map(([userId, message]) => ({ userId, lastMessage: message.text }));
+  }, [user, sentMessages, receivedMessages]);
+
+  // Peers with no user document are recorded as null so they are not re-fetched.
+  useEffect(() => {
+    const missing = chats.map(c => c.userId).filter(id => !(id in peerProfiles));
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(missing.map(async id => [id, await getDoc(doc(db, 'users', id))] as const))
+      .then(entries => {
+        if (cancelled) return;
+        setPeerProfiles(prev => {
+          const next = { ...prev };
+          for (const [id, snap] of entries) {
+            next[id] = snap.exists() ? (snap.data() as UserProfile) : null;
+          }
+          return next;
+        });
+      })
+      .catch(error => console.error('Chat: failed to load peer profiles', error));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chats, peerProfiles]);
+
+  // Fetch active thread
   useEffect(() => {
     if (!user || !activeChat) return;
 
-    const q = query(
-      collection(db, 'messages'),
-      where('senderId', 'in', [user.uid, activeChat]),
-      where('receiverId', 'in', [user.uid, activeChat]),
-      orderBy('createdAt', 'asc')
+    const thread = (senderId: string, receiverId: string) =>
+      query(
+        collection(db, 'messages'),
+        where('senderId', '==', senderId),
+        where('receiverId', '==', receiverId),
+        orderBy('createdAt', 'asc')
+      );
+
+    let outgoing: Message[] = [];
+    let incoming: Message[] = [];
+    const publish = () => {
+      setMessages(
+        [...outgoing, ...incoming].sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis())
+      );
+      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    };
+
+    const unsubscribeOutgoing = onSnapshot(
+      thread(user.uid, activeChat),
+      snapshot => {
+        outgoing = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        publish();
+      },
+      error => console.error('Chat: outgoing thread listener failed', error)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      // Filter manually because Firestore doesn't support complex OR queries easily with ordering
-      const filtered = msgs.filter(m => 
-        (m.senderId === user.uid && m.receiverId === activeChat) || 
-        (m.senderId === activeChat && m.receiverId === user.uid)
-      );
-      setMessages(filtered);
-      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    });
+    const unsubscribeIncoming = onSnapshot(
+      thread(activeChat, user.uid),
+      snapshot => {
+        incoming = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        publish();
+      },
+      error => console.error('Chat: incoming thread listener failed', error)
+    );
 
-    // Fetch receiver profile
-    getDoc(doc(db, 'users', activeChat)).then(snap => {
-      if (snap.exists()) setReceiverProfile(snap.data() as UserProfile);
-    });
+    setReceiverProfile(null);
+    getDoc(doc(db, 'users', activeChat))
+      .then(snap => setReceiverProfile(snap.exists() ? (snap.data() as UserProfile) : null))
+      .catch(error => console.error('Chat: failed to load receiver profile', error));
 
-    // Fetch product if any
-    const prodId = searchParams.get('product');
-    if (prodId) {
-      getDoc(doc(db, 'products', prodId)).then(snap => {
-        if (snap.exists()) setActiveProduct({ id: snap.id, ...snap.data() } as Product);
-      });
+    return () => {
+      unsubscribeOutgoing();
+      unsubscribeIncoming();
+    };
+  }, [user, activeChat]);
+
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    if (!productId) {
+      setActiveProduct(null);
+      return;
     }
-
-    return () => unsubscribe();
-  }, [user, activeChat, searchParams]);
+    getDoc(doc(db, 'products', productId))
+      .then(snap => setActiveProduct(snap.exists() ? ({ id: snap.id, ...snap.data() } as Product) : null))
+      .catch(error => console.error('Chat: failed to load product', error));
+  }, [searchParams]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,14 +195,14 @@ export const Chat: React.FC = () => {
                 }`}
               >
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
-                  {chat.profile?.photoURL ? (
-                    <img src={chat.profile.photoURL} className="w-full h-full rounded-xl object-cover" alt="" />
+                  {peerProfiles[chat.userId]?.photoURL ? (
+                    <img src={peerProfiles[chat.userId]!.photoURL} className="w-full h-full rounded-xl object-cover" alt="" referrerPolicy="no-referrer" />
                   ) : (
                     <UserIcon size={20} />
                   )}
                 </div>
                 <div className="text-left flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 truncate">{chat.profile?.displayName || t('chat.userDisplay')}</p>
+                  <p className="font-bold text-gray-900 truncate">{peerProfiles[chat.userId]?.displayName || t('chat.userDisplay')}</p>
                   <p className="text-xs text-gray-500 truncate">{chat.lastMessage}</p>
                 </div>
               </button>
@@ -167,8 +226,7 @@ export const Chat: React.FC = () => {
                     <UserIcon size={18} />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">{receiverProfile?.displayName || t('chat.loading')}</p>
-                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">{t('chat.online')}</p>
+                    <p className="font-bold text-gray-900">{receiverProfile?.displayName || t('chat.userDisplay')}</p>
                   </div>
                 </div>
                 {activeProduct && (

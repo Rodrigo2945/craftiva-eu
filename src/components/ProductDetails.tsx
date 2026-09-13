@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp } from 'firebase/
 import { Product } from '../types';
 import { useAuth } from './Auth';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, MessageSquare, ShieldCheck, Truck, RotateCcw, User, Heart, Clock, Scissors, Palette } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Info, Truck, User, Heart, Clock, Scissors, Palette } from 'lucide-react';
 import { ProductReviews } from './ProductReviews';
 
 export const ProductDetails: React.FC = () => {
@@ -272,19 +272,9 @@ export const ProductDetails: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 text-sm text-stone-600">
-                <ShieldCheck size={20} className="text-orange-500" />
-                <span>{t('product.securePurchase')}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-stone-600">
-                <Truck size={20} className="text-orange-500" />
-                <span>{t('product.localShipping')}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-stone-600">
-                <RotateCcw size={20} className="text-orange-500" />
-                <span>{t('product.returnPolicy')}</span>
-              </div>
+            <div className="flex items-start gap-3 p-4 bg-stone-50 rounded-2xl border border-stone-100 text-sm text-stone-600 leading-relaxed">
+              <Info size={20} className="text-stone-400 shrink-0 mt-0.5" />
+              <span>{t('product.howItWorks')}</span>
             </div>
           </div>
 

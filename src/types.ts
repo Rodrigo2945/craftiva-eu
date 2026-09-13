@@ -17,6 +17,10 @@ export interface UserProfile {
   };
   shopName?: string;
   preferredLanguage?: string;
+  // Granted by hand after a human checks the artisan's social page. Firestore
+  // rules reject any client write to this field, so it cannot be self-assigned.
+  verified?: boolean;
+  verificationRequestedAt?: Timestamp;
   createdAt: Timestamp;
 }
 

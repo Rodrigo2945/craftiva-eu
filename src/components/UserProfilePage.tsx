@@ -4,6 +4,7 @@ import { useAuth } from './Auth';
 import { motion } from 'motion/react';
 import { User, Mail, Shield, Save, Loader2, CheckCircle2, Store, Phone, Palette, Instagram, Facebook, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Timestamp } from 'firebase/firestore';
 
 export const UserProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export const UserProfilePage: React.FC = () => {
   const [website, setWebsite] = useState(profile?.socialLinks?.website || '');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,19 +45,28 @@ export const UserProfilePage: React.FC = () => {
   const handleRegisterSeller = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // The manual check is done against a public social page, so one is required.
+    if (!instagram.trim() && !facebook.trim()) {
+      setRegisterError(t('userProfile.becomeSeller.socialRequired'));
+      return;
+    }
+
+    setRegisterError(null);
     setIsRegistering(true);
     try {
-      await updateProfileData({ 
+      await updateProfileData({
         role: 'seller',
         shopName,
         bio: shopBio,
-        story: shopBio, // using bio as story for now to keep it simple
+        story: shopBio,
         craftType,
         socialLinks: {
           instagram,
           facebook,
           website
-        }
+        },
+        verificationRequestedAt: Timestamp.now()
       });
       setRegisterSuccess(true);
       setTimeout(() => {
@@ -122,6 +133,12 @@ export const UserProfilePage: React.FC = () => {
               <Shield size={14} />
               {t(`common.${profile.role}`)}
             </div>
+
+            {profile.role === 'seller' && (
+              <p className={`mt-3 text-[11px] font-bold uppercase tracking-widest ${profile.verified ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {profile.verified ? t('seller.verified') : t('seller.notVerified')}
+              </p>
+            )}
           </div>
         </div>
 
@@ -291,8 +308,16 @@ export const UserProfilePage: React.FC = () => {
                   </div>
                 </div>
 
+                <p className="text-xs text-gray-500 bg-gray-50 px-4 py-3 rounded-xl leading-relaxed">
+                  {t('userProfile.becomeSeller.verificationNote')}
+                </p>
+
+                {registerError && (
+                  <p className="text-sm font-bold text-red-600 bg-red-50 px-4 py-3 rounded-xl">{registerError}</p>
+                )}
+
                 <div className="pt-4">
-                  <button 
+                  <button
                     type="submit"
                     disabled={isRegistering || registerSuccess}
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95 disabled:opacity-50"

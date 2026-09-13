@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { UserProfile, Product } from '../types';
+import { UserProfile, Product, Review } from '../types';
 import { ProductCard } from './ProductCard';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, MapPin, Calendar, Package, Star, MessageSquare, ChevronRight, Palette, Instagram, Facebook, Globe } from 'lucide-react';
@@ -25,7 +25,12 @@ export const SellerProfile: React.FC = () => {
   const { id } = useParams();
   const [seller, setSeller] = useState<UserProfile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const averageRating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null;
 
   const getDateLocale = () => {
     switch (i18n.language) {
@@ -54,14 +59,30 @@ export const SellerProfile: React.FC = () => {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-      setProducts(prods);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        setProducts(prods);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('SellerProfile: products listener failed', error);
+        setLoading(false);
+      }
+    );
+
+    const unsubscribeReviews = onSnapshot(
+      query(collection(db, 'reviews'), where('sellerId', '==', id), orderBy('createdAt', 'desc')),
+      (snapshot) => setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review))),
+      (error) => console.error('SellerProfile: reviews listener failed', error)
+    );
 
     fetchSeller();
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubscribeReviews();
+    };
   }, [id]);
 
   useEffect(() => {
@@ -143,7 +164,7 @@ export const SellerProfile: React.FC = () => {
           <div className="mb-2 sm:mb-4">
             <h1 className="text-3xl sm:text-4xl font-serif font-semibold text-stone-900 tracking-tight flex items-center gap-3">
               {seller.displayName}
-              {seller.role === 'admin' && <ShieldCheck size={24} className="text-emerald-600" />}
+              {seller.verified && <ShieldCheck size={24} className="text-emerald-600" />}
             </h1>
             {seller.craftType && (
               <div className="flex items-center gap-2 text-emerald-600 font-bold mt-2">
@@ -156,10 +177,14 @@ export const SellerProfile: React.FC = () => {
                 <Calendar size={16} />
                 <span>{t('seller.memberSince')} {format(seller.createdAt.toDate(), 'MMMM yyyy', { locale: getDateLocale() })}</span>
               </div>
-              <div className="flex items-center gap-1 text-emerald-600">
-                <Star size={16} fill="currentColor" />
-                <span>4.8 (24 {t('seller.reviews')})</span>
-              </div>
+              {averageRating !== null && (
+                <div className="flex items-center gap-1 text-emerald-600">
+                  <Star size={16} fill="currentColor" />
+                  <span>
+                    {averageRating.toFixed(1)} ({reviews.length} {t('seller.reviews')})
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -207,36 +232,22 @@ export const SellerProfile: React.FC = () => {
               </div>
             )}
 
-            <div className="mt-8 pt-8 border-t border-gray-50 space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 font-bold uppercase tracking-widest">{t('seller.location')}</span>
-                <span className="text-gray-900 font-bold">Lisboa, Portugal</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 font-bold uppercase tracking-widest">{t('seller.response')}</span>
-                <span className="text-gray-900 font-bold">~ 2 {t('common.hours')}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 font-bold uppercase tracking-widest">{t('seller.sales')}</span>
-                <span className="text-gray-900 font-bold">142 {t('seller.completed')}</span>
-              </div>
-            </div>
           </section>
 
-          <section className="bg-emerald-600 p-8 rounded-3xl shadow-lg shadow-emerald-100 text-white">
-            <h3 className="text-lg font-black mb-2">{t('seller.verifiedTitle')}</h3>
-            <p className="text-emerald-100 text-sm mb-6">{t('seller.verifiedDesc')}</p>
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-emerald-600 bg-emerald-400 overflow-hidden">
-                  <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="" />
-                </div>
-              ))}
-              <div className="w-8 h-8 rounded-full border-2 border-emerald-600 bg-white text-emerald-600 flex items-center justify-center text-[10px] font-black">
-                +12
-              </div>
-            </div>
-          </section>
+          {seller.verified ? (
+            <section className="bg-emerald-600 p-8 rounded-3xl shadow-lg shadow-emerald-100 text-white">
+              <h3 className="text-lg font-black mb-2 flex items-center gap-2">
+                <ShieldCheck size={20} />
+                {t('seller.verified')}
+              </h3>
+              <p className="text-emerald-100 text-sm">{t('seller.verifiedDesc')}</p>
+            </section>
+          ) : (
+            <section className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-black text-gray-900 mb-2">{t('seller.notVerified')}</h3>
+              <p className="text-gray-500 text-sm">{t('seller.notVerifiedDesc')}</p>
+            </section>
+          )}
         </div>
 
         {/* Products Grid */}
@@ -265,46 +276,49 @@ export const SellerProfile: React.FC = () => {
             </div>
           )}
 
-          {/* Reviews Section (Mockup) */}
           <div className="mt-16">
             <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
               <Star className="text-emerald-600" />
               {t('seller.recentReviews')}
             </h2>
-            <div className="space-y-6">
-              {[
-                { name: 'Maria Santos', rating: 5, text: 'Excelente vendedor! O produto chegou impecável e muito rápido.', date: 'Há 2 dias' },
-                { name: 'Ricardo Pereira', rating: 4, text: 'Muito atencioso. Recomendo vivamente.', date: 'Há 1 semana' }
-              ].map((review, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                        <User size={20} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">{review.name}</p>
-                        <div className="flex text-emerald-400">
-                          {[...Array(review.rating)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+            {reviews.length > 0 ? (
+              <div className="space-y-6">
+                {reviews.slice(0, 5).map((review, i) => (
+                  <motion.div
+                    key={review.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                          <User size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{review.buyerName}</p>
+                          <div className="flex text-emerald-400">
+                            {[...Array(review.rating)].map((_, star) => (
+                              <Star key={star} size={12} fill="currentColor" />
+                            ))}
+                          </div>
                         </div>
                       </div>
+                      <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        {format(review.createdAt.toDate(), 'dd MMM yyyy', { locale: getDateLocale() })}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{review.date}</span>
-                  </div>
-                  <p className="text-gray-600 text-sm leading-relaxed">{review.text}</p>
-                </motion.div>
-              ))}
-            </div>
-            <button className="w-full mt-8 py-4 border-2 border-gray-100 rounded-2xl text-gray-500 font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 group">
-              {t('seller.viewAllReviews')}
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+                    <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
+                <Star size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 font-medium">{t('seller.noReviews')}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

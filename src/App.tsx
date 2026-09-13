@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-ro
 import { AuthProvider, useAuth } from './components/Auth';
 import { Navbar } from './components/Navbar';
 import { Logo } from './components/Logo';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe } from 'lucide-react';
 
@@ -129,6 +130,7 @@ function AppContent() {
       </AnimatePresence>
 
       <main>
+        <ErrorBoundary>
         <Suspense fallback={<div className="h-screen flex items-center justify-center text-stone-400">{t('common.loading')}</div>}>
         <Routes>
           <Route path="/" element={<ProductList />} />
@@ -172,6 +174,7 @@ function AppContent() {
           <Route path="/terms" element={<TermsPage />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
 
       <footer className="bg-white border-t border-gray-100 py-12 mt-20">

@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getAnalytics } from 'firebase/analytics';
+import type { FirebaseStorage } from 'firebase/storage';
+import type { Analytics } from 'firebase/analytics';
 
 // Firebase configuration - APENAS para backend (Auth, Database, Storage)
 // Deploy é feito via GitHub Pages
@@ -20,22 +20,46 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Helper functions for analytics tracking
-export const trackEvent = (eventName: string, params?: Record<string, any>) => {
-  if (analytics) {
-    import('firebase/analytics').then(({ logEvent }) => {
-      logEvent(analytics, eventName, params);
-    });
+// Loaded on demand: only the vendor dashboard uploads files, so this keeps the
+// Storage SDK out of the initial bundle.
+let storageInstance: FirebaseStorage | null = null;
+export const getStorageLazy = async (): Promise<FirebaseStorage> => {
+  if (!storageInstance) {
+    const { getStorage } = await import('firebase/storage');
+    storageInstance = getStorage(app);
+  }
+  return storageInstance;
+};
+
+// Analytics sets cookies, which under ePrivacy needs opt-in consent BEFORE it
+// runs. It therefore stays off until something records consent, and no consent
+// UI exists yet — so today this never initialises.
+const ANALYTICS_CONSENT_KEY = 'craftiva.analyticsConsent';
+
+export const hasAnalyticsConsent = (): boolean => {
+  try {
+    return window.localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'granted';
+  } catch {
+    return false;
   }
 };
 
-export const trackPageView = (pageName: string) => {
-  if (analytics) {
-    import('firebase/analytics').then(({ logEvent }) => {
-      logEvent(analytics, 'page_view', { page_name: pageName });
-    });
+let analyticsInstance: Analytics | null = null;
+const getAnalyticsLazy = async (): Promise<Analytics | null> => {
+  if (typeof window === 'undefined' || !hasAnalyticsConsent()) return null;
+  if (!analyticsInstance) {
+    const { getAnalytics } = await import('firebase/analytics');
+    analyticsInstance = getAnalytics(app);
   }
+  return analyticsInstance;
 };
+
+export const trackEvent = async (eventName: string, params?: Record<string, unknown>) => {
+  const analytics = await getAnalyticsLazy();
+  if (!analytics) return;
+  const { logEvent } = await import('firebase/analytics');
+  logEvent(analytics, eventName, params);
+};
+
+export const trackPageView = (pageName: string) => trackEvent('page_view', { page_name: pageName });

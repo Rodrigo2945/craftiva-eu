@@ -2,19 +2,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Membership is granted only from the Firebase console — no client can write
+    // here, which is what makes it safe to trust as the admin check.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if false;
+    }
+
     // Public read for product listing; write only by the seller who owns the product
     match /products/{productId} {
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.sellerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (request.auth != null && resource.data.sellerId == request.auth.uid);
     }
 
-    // Users: public profile read; only the owner can write
+    // Users: public profile read; the owner may edit their own profile, but
+    // never grant themselves the admin role or the verified badge.
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.role in ['', 'buyer', 'seller']
+        && !('verified' in request.resource.data.keys());
+      allow update: if isAdmin()
+        || (request.auth != null
+            && request.auth.uid == userId
+            && request.resource.data.role in ['', 'buyer', 'seller']
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified']));
+      allow delete: if request.auth != null && request.auth.uid == userId;
 
       // Wishlist: only the owner can read or write their own wishlist
       match /wishlist/{itemId} {
@@ -29,16 +51,27 @@ service cloud.firestore {
             || resource.data.receiverId == request.auth.uid);
       allow create: if request.auth != null
         && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
-    // Reviews: public read; authenticated users can create (one per product enforced app-side)
+    // Reviews: public read. The document id is buyerId_productId, so the one
+    // review per buyer per product limit is enforced here rather than in the UI.
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if request.auth != null
-        && request.resource.data.buyerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.buyerId == request.auth.uid;
+        && request.resource.data.buyerId == request.auth.uid
+        && reviewId == request.auth.uid + '_' + request.resource.data.productId
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update: if request.auth != null
+        && resource.data.buyerId == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow delete: if isAdmin()
+        || (request.auth != null && resource.data.buyerId == request.auth.uid);
     }
   }
 }

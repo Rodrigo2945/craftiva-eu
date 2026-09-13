@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { db, storage, auth } from '../firebase';
+import { db, getStorageLazy, auth } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from './Auth';
@@ -34,6 +34,23 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+const emptyProductForm = {
+  name: '',
+  description: '',
+  price: '',
+  category: 'ceramics',
+  materials: '',
+  productionTime: '',
+  isCustomizable: false,
+  location: '',
+  shippingInfo: '',
+  tags: '',
+};
+
+// Products written before price validation existed can hold NaN, which would
+// throw on toFixed and take the whole table down.
+const formatPrice = (value: number) => (Number.isFinite(value) ? value.toFixed(2) : '—');
+
 export const VendorDashboard: React.FC = () => {
   const { t } = useTranslation();
   const { user, profile } = useAuth();
@@ -42,18 +59,10 @@ export const VendorDashboard: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: 'ceramics',
-    materials: '',
-    productionTime: '',
-    isCustomizable: false,
-    location: '',
-    shippingInfo: '',
-    tags: '',
-  });
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [newProduct, setNewProduct] = useState(emptyProductForm);
 
   useEffect(() => {
     if (!user) return;
@@ -108,30 +117,67 @@ export const VendorDashboard: React.FC = () => {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const closeForm = () => {
+    setIsAdding(false);
+    setEditingProduct(null);
+    setNewProduct(emptyProductForm);
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
+    setFormError(null);
+  };
+
+  const startEditing = (product: Product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name ?? '',
+      description: product.description ?? '',
+      price: Number.isFinite(product.price) ? String(product.price) : '',
+      category: product.category ?? 'ceramics',
+      materials: (product.materials ?? []).join(', '),
+      productionTime: product.productionTime ?? '',
+      isCustomizable: product.isCustomizable ?? false,
+      location: product.location ?? '',
+      shippingInfo: product.shippingInfo ?? '',
+      tags: (product.tags ?? []).join(', '),
+    });
+    setExistingImages(product.images ?? []);
+    setImageFiles([]);
+    setImagePreviews([]);
+    setFormError(null);
+    setIsAdding(true);
+  };
+
+  const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
 
+    const price = Number.parseFloat(newProduct.price);
+    if (!Number.isFinite(price) || price < 0) {
+      setFormError(t('vendor.addProduct.invalidPrice'));
+      return;
+    }
+    if (existingImages.length === 0 && imageFiles.length === 0) {
+      setFormError(t('vendor.addProduct.imageRequired'));
+      return;
+    }
+
+    setFormError(null);
     setUploading(true);
     try {
-      // Upload images to Storage
-      const imageUrls = await Promise.all(
+      const storage = imageFiles.length > 0 ? await getStorageLazy() : null;
+      const uploadedUrls = await Promise.all(
         imageFiles.map(async (file) => {
-          const storageRef = ref(storage, `products/${user.uid}/${Date.now()}-${file.name}`);
+          const storageRef = ref(storage!, `products/${user.uid}/${Date.now()}-${file.name}`);
           const snapshot = await uploadBytes(storageRef, file);
           return await getDownloadURL(snapshot.ref);
         })
       );
 
-      // If no images uploaded, use a placeholder
-      const finalImages = imageUrls.length > 0 ? imageUrls : [`https://picsum.photos/seed/${Math.random()}/800/600`];
-
-      await addDoc(collection(db, 'products'), {
-        sellerId: user.uid,
-        sellerName: profile.displayName,
+      const details = {
         name: newProduct.name,
         description: newProduct.description,
-        price: parseFloat(newProduct.price),
+        price,
         category: newProduct.category,
         materials: newProduct.materials.split(',').map(m => m.trim()).filter(m => m !== ''),
         productionTime: newProduct.productionTime,
@@ -139,28 +185,28 @@ export const VendorDashboard: React.FC = () => {
         location: newProduct.location,
         shippingInfo: newProduct.shippingInfo,
         tags: newProduct.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
-        images: finalImages,
-        status: 'active',
-        createdAt: Timestamp.now(),
-      });
-      
-      setIsAdding(false);
-      setNewProduct({ 
-        name: '', 
-        description: '', 
-        price: '', 
-        category: 'ceramics', 
-        materials: '',
-        productionTime: '',
-        isCustomizable: false,
-        location: '', 
-        shippingInfo: '', 
-        tags: '' 
-      });
-      setImageFiles([]);
-      setImagePreviews([]);
+        images: [...existingImages, ...uploadedUrls],
+      };
+
+      if (editingProduct) {
+        await updateDoc(doc(db, 'products', editingProduct.id), details);
+      } else {
+        await addDoc(collection(db, 'products'), {
+          ...details,
+          sellerId: user.uid,
+          sellerName: profile.displayName,
+          status: 'active',
+          createdAt: Timestamp.now(),
+        });
+      }
+
+      closeForm();
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'products');
+      handleFirestoreError(
+        error,
+        editingProduct ? OperationType.UPDATE : OperationType.CREATE,
+        editingProduct ? `products/${editingProduct.id}` : 'products'
+      );
     } finally {
       setUploading(false);
     }
@@ -189,7 +235,7 @@ export const VendorDashboard: React.FC = () => {
     { label: t('vendor.stats.total'), value: products.length, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: t('vendor.stats.active'), value: products.filter(p => p.status === 'active').length, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: t('vendor.stats.sold'), value: products.filter(p => p.status === 'sold').length, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: t('vendor.stats.revenue'), value: `${products.filter(p => p.status === 'sold').reduce((acc, p) => acc + p.price, 0).toFixed(2)}€`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: t('vendor.stats.revenue'), value: `${formatPrice(products.filter(p => p.status === 'sold').reduce((acc, p) => acc + (Number.isFinite(p.price) ? p.price : 0), 0))}€`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
 
   return (
@@ -200,7 +246,10 @@ export const VendorDashboard: React.FC = () => {
           <p className="text-stone-500 mt-1">{t('vendor.subtitle')}</p>
         </div>
         <button
-          onClick={() => setIsAdding(true)}
+          onClick={() => {
+            closeForm();
+            setIsAdding(true);
+          }}
           className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95"
         >
           <Plus size={20} />
@@ -235,7 +284,7 @@ export const VendorDashboard: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsAdding(false)}
+              onClick={closeForm}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
@@ -245,8 +294,10 @@ export const VendorDashboard: React.FC = () => {
               className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="p-8">
-                <h2 className="text-2xl font-black text-gray-900 mb-6">{t('vendor.addProduct.title')}</h2>
-                <form onSubmit={handleAddProduct} className="space-y-4">
+                <h2 className="text-2xl font-black text-gray-900 mb-6">
+                  {editingProduct ? t('vendor.addProduct.editTitle') : t('vendor.addProduct.title')}
+                </h2>
+                <form onSubmit={handleSubmitProduct} className="space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">{t('vendor.addProduct.name')}</label>
                     <input
@@ -274,6 +325,7 @@ export const VendorDashboard: React.FC = () => {
                         required
                         type="number"
                         step="0.01"
+                        min="0"
                         className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                         value={newProduct.price}
                         onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
@@ -368,8 +420,20 @@ export const VendorDashboard: React.FC = () => {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t('vendor.addProduct.images')}</label>
                     <div className="grid grid-cols-3 gap-3 mb-4">
+                      {existingImages.map((url, i) => (
+                        <div key={url} className="relative aspect-square rounded-xl overflow-hidden group">
+                          <img src={url} className="w-full h-full object-cover" alt="" />
+                          <button
+                            type="button"
+                            onClick={() => setExistingImages(prev => prev.filter((_, index) => index !== i))}
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
                       {imagePreviews.map((preview, i) => (
-                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
+                        <div key={preview} className="relative aspect-square rounded-xl overflow-hidden group">
                           <img src={preview} className="w-full h-full object-cover" alt="" />
                           <button
                             type="button"
@@ -380,7 +444,7 @@ export const VendorDashboard: React.FC = () => {
                           </button>
                         </div>
                       ))}
-                      {imagePreviews.length < 6 && (
+                      {existingImages.length + imagePreviews.length < 6 && (
                         <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-emerald-500 hover:text-emerald-500 cursor-pointer transition-all">
                           <Upload size={20} className="mb-1" />
                           <span className="text-[10px] font-bold uppercase tracking-widest">{t('vendor.addProduct.upload')}</span>
@@ -391,11 +455,15 @@ export const VendorDashboard: React.FC = () => {
                     <p className="text-[10px] text-gray-400 font-medium">{t('vendor.addProduct.hint')}</p>
                   </div>
 
+                  {formError && (
+                    <p className="text-sm font-bold text-red-600 bg-red-50 px-4 py-3 rounded-xl">{formError}</p>
+                  )}
+
                   <div className="flex gap-3 pt-4">
                     <button
                       type="button"
                       disabled={uploading}
-                      onClick={() => setIsAdding(false)}
+                      onClick={closeForm}
                       className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
                     >
                       {t('common.cancel')}
@@ -405,7 +473,13 @@ export const VendorDashboard: React.FC = () => {
                       disabled={uploading}
                       className="flex-1 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {uploading ? <Loader2 className="animate-spin" size={20} /> : t('vendor.addProduct.publish')}
+                      {uploading ? (
+                        <Loader2 className="animate-spin" size={20} />
+                      ) : editingProduct ? (
+                        t('vendor.addProduct.save')
+                      ) : (
+                        t('vendor.addProduct.publish')
+                      )}
                     </button>
                   </div>
                 </form>
@@ -435,7 +509,13 @@ export const VendorDashboard: React.FC = () => {
                 <tr key={product.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <img src={product.images[0]} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                      {product.images?.[0] ? (
+                        <img src={product.images[0]} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
+                          <ImageIcon size={18} />
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold text-gray-900">{product.name}</p>
                         <p className="text-xs text-gray-500">{t(`categories.${product.category.toLowerCase()}`)}</p>
@@ -443,7 +523,7 @@ export const VendorDashboard: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-bold text-gray-900">
-                    {product.price.toFixed(2)}€
+                    {formatPrice(product.price)}€
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg uppercase tracking-wider">
@@ -472,8 +552,16 @@ export const VendorDashboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
+                      <button
+                        onClick={() => startEditing(product)}
+                        title={t('vendor.edit')}
+                        className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+                      <button
                         onClick={() => deleteProduct(product.id)}
+                        title={t('vendor.delete')}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 size={18} />

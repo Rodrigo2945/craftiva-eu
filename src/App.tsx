@@ -215,7 +215,7 @@ function AppContent() {
             {t('cookies.change')}
           </button>
           <p className="text-gray-300 text-[10px] mt-12 uppercase tracking-widest font-black">
-            © 2026 CRAFTIVA.EU Inc. {t('footer.copyright')}
+            © 2026 CRAFTIVA.EU {t('footer.copyright')}
           </p>
         </div>
       </footer>

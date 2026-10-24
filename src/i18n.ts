@@ -123,6 +123,7 @@ i18n
             customizableNo: 'Não personalizável',
           },
           seller: {
+            title: 'Oficina',
             loading: 'Carregando perfil...',
             notFound: 'Artesão não encontrado.',
             memberSince: 'Membro desde',
@@ -444,6 +445,7 @@ i18n
             customizableNo: 'Not customizable',
           },
           seller: {
+            title: 'Studio',
             loading: 'Loading profile...',
             notFound: 'Artisan not found.',
             memberSince: 'Member since',
@@ -765,6 +767,7 @@ i18n
             customizableNo: 'No personalizable',
           },
           seller: {
+            title: 'Taller',
             loading: 'Cargando perfil...',
             notFound: 'Artesano no encontrado.',
             memberSince: 'Miembro desde',

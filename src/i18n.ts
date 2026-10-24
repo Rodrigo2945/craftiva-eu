@@ -7,6 +7,11 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'pt',
+    supportedLngs: ['pt', 'en', 'es'],
+    detection: {
+      order: ['localStorage', 'htmlTag'],
+      caches: ['localStorage'],
+    },
     debug: false,
     interpolation: {
       escapeValue: false,
@@ -118,6 +123,7 @@ i18n
             customizableNo: 'Não personalizável',
           },
           seller: {
+            title: 'Oficina',
             loading: 'Carregando perfil...',
             notFound: 'Artesão não encontrado.',
             memberSince: 'Membro desde',
@@ -439,6 +445,7 @@ i18n
             customizableNo: 'Not customizable',
           },
           seller: {
+            title: 'Studio',
             loading: 'Loading profile...',
             notFound: 'Artisan not found.',
             memberSince: 'Member since',
@@ -760,6 +767,7 @@ i18n
             customizableNo: 'No personalizable',
           },
           seller: {
+            title: 'Taller',
             loading: 'Cargando perfil...',
             notFound: 'Artesano no encontrado.',
             memberSince: 'Miembro desde',

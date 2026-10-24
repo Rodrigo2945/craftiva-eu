@@ -13,32 +13,6 @@ import {
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import i18n from '../i18n';
 import { UserProfile, UserRole } from '../types';
-import { LogIn, LogOut, User as UserIcon, Shield } from 'lucide-react';
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
 
 export const AuthContext = React.createContext<{
   user: User | null;
@@ -92,7 +66,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(newProfile);
           }
         } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          console.error('Firestore Error: ', error);
+          setProfile({
+            uid: firebaseUser.uid,
+            displayName: firebaseUser.displayName || 'Anonymous',
+            photoURL: firebaseUser.photoURL || undefined,
+            role: '' as UserRole,
+            preferredLanguage: i18n.language || 'pt',
+            createdAt: Timestamp.now(),
+          });
         }
       } else {
         setProfile(null);

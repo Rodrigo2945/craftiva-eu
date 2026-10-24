@@ -11,6 +11,9 @@ const staticPages = [
   { url: '/', priority: '1.0', changefreq: 'daily' },
   { url: '/blog', priority: '0.8', changefreq: 'weekly' },
   { url: '/terms', priority: '0.5', changefreq: 'monthly' },
+  { url: '/privacy', priority: '0.4', changefreq: 'yearly' },
+  { url: '/help', priority: '0.5', changefreq: 'monthly' },
+  { url: '/contact', priority: '0.5', changefreq: 'yearly' },
   { url: '/login', priority: '0.6', changefreq: 'monthly' },
   { url: '/register', priority: '0.6', changefreq: 'monthly' },
 ];
@@ -33,7 +36,6 @@ function generateSitemap() {
     xml += '  </url>\n';
   });
 
-  // Category pages (future implementation)
   categories.forEach(category => {
     xml += '  <url>\n';
     xml += `    <loc>${baseUrl}/category/${category}</loc>\n`;
@@ -41,6 +43,14 @@ function generateSitemap() {
     xml += `    <priority>0.7</priority>\n`;
     xml += '  </url>\n';
   });
+
+  for (let id = 1; id <= 9; id += 1) {
+    xml += '  <url>\n';
+    xml += `    <loc>${baseUrl}/blog/${id}</loc>\n`;
+    xml += '    <changefreq>monthly</changefreq>\n';
+    xml += '    <priority>0.6</priority>\n';
+    xml += '  </url>\n';
+  }
 
   xml += '</urlset>';
 

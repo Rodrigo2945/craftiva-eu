@@ -42,5 +42,7 @@
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
+  background: #F6F0E6;
+  color: #2A241E;
+  @apply antialiased;
 }

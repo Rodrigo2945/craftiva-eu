@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <title>Craftiva.eu</title>
+    <script>
+      // GitHub Pages serves this file for unknown paths. Redirect once to
+      // /?/<path> so index.html can restore the SPA route. A custom domain
+      // at the site root keeps zero path segments.
+      (function () {
+        var pathSegmentsToKeep = 0;
+        var locationRef = window.location;
+        locationRef.replace(
+          locationRef.protocol +
+            '//' +
+            locationRef.hostname +
+            (locationRef.port ? ':' + locationRef.port : '') +
+            locationRef.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') +
+            '/?/' +
+            locationRef.pathname
+              .slice(1)
+              .split('/')
+              .slice(pathSegmentsToKeep)
+              .join('/')
+              .replace(/&/g, '~and~') +
+            (locationRef.search ? '&' + locationRef.search.slice(1).replace(/&/g, '~and~') : '') +
+            locationRef.hash
+        );
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

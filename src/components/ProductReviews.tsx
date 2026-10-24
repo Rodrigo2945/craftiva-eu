@@ -34,6 +34,9 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, selle
       const revs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
       setReviews(revs);
       setLoading(false);
+    }, () => {
+      setReviews([]);
+      setLoading(false);
     });
 
     return () => unsubscribe();

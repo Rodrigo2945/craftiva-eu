@@ -1,93 +1,161 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from './Auth';
-import { ShoppingBag, User, LogIn, LogOut, LayoutDashboard, MessageSquare, Heart } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Heart, LayoutDashboard, LogOut, Menu, MessageSquare, User, X } from 'lucide-react';
 import { Logo } from './Logo';
 
+const languages = ['pt', 'en', 'es'] as const;
+
 export const Navbar: React.FC = () => {
-  const { t } = useTranslation();
-  const { user, profile, signIn, logout } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, profile, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  const links = [
+    { to: '/#colecoes', label: t('nav.explore') },
+    { to: '/#artesaos', label: t('nav.artisans') },
+    { to: '/#compradores', label: t('nav.buyers') },
+    { to: '/register', label: t('nav.sell') },
+  ];
+
+  const active = (code: string) => i18n.resolvedLanguage?.startsWith(code) || i18n.language.startsWith(code);
+
+  const languageSwitch = (
+    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+      {languages.map((code, index) => (
+        <React.Fragment key={code}>
+          {index > 0 && <span className="text-[#D9CFC3]">|</span>}
+          <button
+            type="button"
+            onClick={() => {
+              i18n.changeLanguage(code);
+              setOpen(false);
+            }}
+            className={active(code) ? 'text-[#C65D3B]' : 'text-[#8A7D72] hover:text-[#2A241E]'}
+          >
+            {code}
+          </button>
+        </React.Fragment>
+      ))}
+    </div>
+  );
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Logo className="h-8 group-hover:scale-105 transition-transform" />
+    <header className="sticky top-0 z-50 border-b border-[#E7DDD0] bg-[#F6F0E6]/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <Link to="/" className="shrink-0" aria-label="Craftiva">
+          <Logo />
         </Link>
 
-        <div className="flex items-center gap-4">
+        <nav className="hidden items-center gap-7 text-sm font-medium text-[#3C342C] lg:flex">
+          {links.map((link) => (
+            <Link key={link.to} to={link.to} className="hover:text-[#C65D3B]">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-4 lg:flex">
+          {languageSwitch}
           {user ? (
-            <>
-              <Link 
-                to="/wishlist" 
-                className="p-2 text-stone-600 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors"
-                title={t('common.wishlist')}
-              >
-                <Heart size={22} />
-              </Link>
-
-              <Link 
-                to="/messages" 
-                className="p-2 text-stone-600 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors"
-                title={t('common.messages')}
-              >
-                <MessageSquare size={22} />
-              </Link>
-              
-              {profile?.role === 'seller' && (
-                <Link 
-                  to="/dashboard" 
-                  className="p-2 text-stone-600 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors"
-                  title={t('common.dashboard')}
-                >
-                  <LayoutDashboard size={22} />
-                </Link>
-              )}
-
-              <Link 
-                to="/profile" 
-                className="flex items-center gap-3 pl-4 border-l border-stone-100 group/profile"
-              >
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-stone-900 group-hover/profile:text-orange-600 transition-colors">{profile?.displayName}</p>
-                  <p className="text-xs text-stone-500 capitalize">{profile?.role === 'seller' ? t('common.seller') : t('common.buyer')}</p>
-                </div>
-                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 overflow-hidden border border-orange-100 group-hover/profile:scale-105 transition-transform">
-                  {profile?.photoURL ? (
-                    <img src={profile.photoURL} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={20} />
-                  )}
-                </div>
-              </Link>
-              <button 
-                onClick={logout}
-                className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                title={t('common.logout')}
-              >
-                <LogOut size={22} />
-              </button>
-            </>
+            <AccountLinks />
           ) : (
             <div className="flex items-center gap-2">
-              <Link
-                to="/login"
-                className="text-stone-600 font-bold hover:text-orange-600 px-4 py-2 transition-colors"
-              >
+              <Link to="/login" className="px-3 py-2 text-sm font-semibold text-[#3C342C] hover:text-[#C65D3B]">
                 {t('common.login')}
               </Link>
               <Link
                 to="/register"
-                className="bg-orange-600 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-orange-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+                className="rounded-full bg-[#C65D3B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A34A2C]"
               >
                 {t('common.register')}
               </Link>
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          className="rounded-full p-2 text-[#3C342C] lg:hidden"
+          aria-label={open ? t('nav.closeMenu') : t('nav.openMenu')}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
-    </nav>
+
+      {open && (
+        <div className="border-t border-[#E7DDD0] px-4 py-4 lg:hidden">
+          <div className="flex flex-col gap-3 text-base font-medium text-[#3C342C]">
+            {links.map((link) => (
+              <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="py-1">
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            {languageSwitch}
+            {user ? (
+              <AccountLinks compact onNavigate={() => setOpen(false)} />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login" onClick={() => setOpen(false)} className="text-sm font-semibold">
+                  {t('common.login')}
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full bg-[#C65D3B] px-4 py-2 text-sm font-semibold text-white"
+                >
+                  {t('common.register')}
+                </Link>
+              </div>
+            )}
+          </div>
+          {profile?.displayName && (
+            <p className="mt-3 text-xs text-[#8A7D72]">{profile.displayName}</p>
+          )}
+        </div>
+      )}
+    </header>
+  );
+};
+
+const AccountLinks: React.FC<{ compact?: boolean; onNavigate?: () => void }> = ({ compact, onNavigate }) => {
+  const { t } = useTranslation();
+  const { profile, logout } = useAuth();
+  const className = compact
+    ? 'p-2 text-[#3C342C]'
+    : 'p-2 text-[#3C342C] hover:text-[#C65D3B]';
+
+  return (
+    <div className="flex items-center gap-1">
+      <Link to="/wishlist" className={className} title={t('common.wishlist')} onClick={onNavigate}>
+        <Heart size={20} />
+      </Link>
+      <Link to="/messages" className={className} title={t('common.messages')} onClick={onNavigate}>
+        <MessageSquare size={20} />
+      </Link>
+      {profile?.role === 'seller' && (
+        <Link to="/dashboard" className={className} title={t('common.dashboard')} onClick={onNavigate}>
+          <LayoutDashboard size={20} />
+        </Link>
+      )}
+      <Link to="/profile" className={className} title={t('userProfile.title')} onClick={onNavigate}>
+        <User size={20} />
+      </Link>
+      <button
+        type="button"
+        className={className}
+        title={t('common.logout')}
+        onClick={() => {
+          onNavigate?.();
+          logout();
+        }}
+      >
+        <LogOut size={20} />
+      </button>
+    </div>
   );
 };

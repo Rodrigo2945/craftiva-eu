@@ -44,9 +44,18 @@ export const WishlistPage: React.FC = () => {
 
       setWishlistProducts(products.filter((p): p is Product => p !== null));
       setLoading(false);
+    }, () => {
+      setWishlistProducts([]);
+      setLoading(false);
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setTimeout(() => setLoading(false), 7000);
+    return () => window.clearTimeout(timer);
   }, [user]);
 
   if (!user) {

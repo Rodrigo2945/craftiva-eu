@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Product } from '../types';
+import { findDemoProduct } from '../data/demoCatalog';
 import { useAuth } from './Auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, MessageSquare, ShieldCheck, Truck, RotateCcw, User, Heart, Clock, Scissors, Palette } from 'lucide-react';
@@ -26,8 +27,10 @@ export const ProductDetails: React.FC = () => {
     }
 
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', id);
-    const unsubscribe = onSnapshot(wishlistRef, (doc) => {
-      setIsWishlisted(doc.exists());
+    const unsubscribe = onSnapshot(wishlistRef, (snapshot) => {
+      setIsWishlisted(snapshot.exists());
+    }, () => {
+      setIsWishlisted(false);
     });
 
     return () => unsubscribe();
@@ -59,15 +62,26 @@ export const ProductDetails: React.FC = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
     const fetchProduct = async () => {
       if (!id) return;
-      const docSnap = await getDoc(doc(db, 'products', id));
-      if (docSnap.exists()) {
-        setProduct({ id: docSnap.id, ...docSnap.data() } as Product);
+      try {
+        const docSnap = await getDoc(doc(db, 'products', id));
+        if (docSnap.exists()) {
+          if (!cancelled) setProduct({ id: docSnap.id, ...docSnap.data() } as Product);
+          return;
+        }
+      } catch (error) {
+        console.error('Product read failed', error);
       }
-      setLoading(false);
+      if (!cancelled) setProduct(findDemoProduct(id));
     };
-    fetchProduct();
+    fetchProduct().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -194,10 +208,18 @@ export const ProductDetails: React.FC = () => {
             <h1 className="text-4xl md:text-5xl font-serif font-semibold text-stone-900 mb-4 tracking-tight leading-tight">
               {product.name}
             </h1>
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-3xl font-black text-orange-600">
-                {new Intl.NumberFormat(i18n.language === 'pt' ? 'pt-PT' : i18n.language, { style: 'currency', currency: 'EUR' }).format(product.price)}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <span className="text-3xl font-semibold text-[#C65D3B]">
+                {t('catalog.fromPrice', { price: Math.round(product.price) })}
               </span>
+              {product.moq ? (
+                <span className="text-sm font-semibold text-[#2A241E]">{t('product.moqLabel', { count: product.moq })}</span>
+              ) : null}
+              {product.verified && (
+                <span className="rounded-full bg-[#F6E4DC] px-3 py-1 text-xs font-semibold text-[#C65D3B]">
+                  {t('product.verifiedStudio')}
+                </span>
+              )}
               {product.status === 'sold' && (
                 <span className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm font-bold">
                   {t('product.sold')}
@@ -295,7 +317,7 @@ export const ProductDetails: React.FC = () => {
               className="flex-1 bg-orange-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-orange-700 transition-all shadow-xl shadow-orange-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3"
             >
               <MessageSquare size={24} />
-              <span>{product.isCustomizable ? t('product.requestCustomization') : t('product.contactSeller')}</span>
+              <span>{t('product.requestOrder')}</span>
             </button>
             <button
               onClick={toggleWishlist}

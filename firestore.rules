@@ -1,44 +1,87 @@
 rules_version = '2';
+// Public catalogue reads. Writes stay with the authenticated owner or an admin.
+// Deploy: firebase deploy --only firestore:rules --project craftiva-eu
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Public read for product listing; write only by the seller who owns the product
-    match /products/{productId} {
-      allow read: if true;
-      allow create: if request.auth != null
-        && request.resource.data.sellerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.sellerId == request.auth.uid;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Users: public profile read; only the owner can write
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
+    }
+
+    function ownsSeller(data) {
+      return signedIn() && data.sellerId == request.auth.uid;
+    }
+
+    // Products shown on the homepage and category pages.
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if ownsSeller(request.resource.data) || isAdmin();
+      allow update, delete: if ownsSeller(resource.data) || isAdmin();
+    }
+
+    // Same visibility if a listing is stored separately from a product.
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if signedIn() && (
+        isAdmin() ||
+        request.resource.data.sellerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        isAdmin() ||
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blog/{postId} {
+      allow read: if true;
+      allow create: if signedIn() && (
+        isAdmin() || request.resource.data.authorId == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        isAdmin() || resource.data.authorId == request.auth.uid
+      );
+    }
+
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if signedIn() && (request.auth.uid == userId || isAdmin());
 
-      // Wishlist: only the owner can read or write their own wishlist
       match /wishlist/{itemId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if signedIn() && request.auth.uid == userId;
       }
     }
 
-    // Messages: only participants (sender or receiver) can read/write
     match /messages/{messageId} {
-      allow read: if request.auth != null
-        && (resource.data.senderId == request.auth.uid
-            || resource.data.receiverId == request.auth.uid);
-      allow create: if request.auth != null
-        && request.resource.data.senderId == request.auth.uid;
+      allow read: if signedIn() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
       allow update, delete: if false;
     }
 
-    // Reviews: public read; authenticated users can create (one per product enforced app-side)
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if request.auth != null
-        && request.resource.data.buyerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.buyerId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.buyerId == request.auth.uid || isAdmin()
+      );
     }
   }
 }

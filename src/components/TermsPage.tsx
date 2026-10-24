@@ -7,14 +7,17 @@ export const TermsPage: React.FC = () => {
   const { t } = useTranslation();
 
   const sections = [
-    { id: 'acceptance', icon: <CheckCircle className="text-blue-500" /> },
-    { id: 'platform_role', icon: <Scale className="text-emerald-500" /> },
-    { id: 'accounts', icon: <User className="text-purple-500" /> },
-    { id: 'user_content', icon: <Image className="text-pink-500" /> },
-    { id: 'prohibited', icon: <AlertTriangle className="text-red-500" /> },
-    { id: 'liability', icon: <ShieldAlert className="text-orange-500" /> },
-    { id: 'indemnification', icon: <Briefcase className="text-teal-500" /> },
-    { id: 'governing_law', icon: <Globe className="text-indigo-500" /> },
+    { id: 'acceptance', icon: <CheckCircle className="text-[#C65D3B]" /> },
+    { id: 'platform_role', icon: <Scale className="text-[#C65D3B]" /> },
+    { id: 'orders', icon: <FileText className="text-[#C65D3B]" /> },
+    { id: 'payments', icon: <Briefcase className="text-[#C65D3B]" /> },
+    { id: 'verification', icon: <Shield className="text-[#C65D3B]" /> },
+    { id: 'accounts', icon: <User className="text-[#C65D3B]" /> },
+    { id: 'user_content', icon: <Image className="text-[#C65D3B]" /> },
+    { id: 'prohibited', icon: <AlertTriangle className="text-[#C65D3B]" /> },
+    { id: 'liability', icon: <ShieldAlert className="text-[#C65D3B]" /> },
+    { id: 'indemnification', icon: <Lock className="text-[#C65D3B]" /> },
+    { id: 'governing_law', icon: <Globe className="text-[#C65D3B]" /> },
   ];
 
   return (
@@ -30,6 +33,10 @@ export const TermsPage: React.FC = () => {
         <p className="text-gray-500 font-medium">
           {t('terms.lastUpdated')}
         </p>
+        <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-left">
+          <p className="text-sm font-semibold text-amber-900">{t('terms.draftBadge')}</p>
+          <p className="mt-1 text-sm leading-relaxed text-amber-900/80">{t('terms.draftNote')}</p>
+        </div>
       </motion.div>
 
       <div className="prose prose-emerald max-w-none">

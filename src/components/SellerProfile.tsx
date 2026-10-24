@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UserProfile, Product } from '../types';
+import { demoProductsAsProducts, getDemoSeller } from '../data/demoCatalog';
 import { ProductCard } from './ProductCard';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, MapPin, Calendar, Package, Star, MessageSquare, ChevronRight, Palette, Instagram, Facebook, Globe } from 'lucide-react';
@@ -37,31 +38,55 @@ export const SellerProfile: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
 
-    // Fetch Seller Profile
+    const useDemoSeller = () => {
+      const demoSeller = getDemoSeller(id);
+      if (demoSeller && !cancelled) setSeller(demoSeller);
+    };
+
     const fetchSeller = async () => {
-      const docSnap = await getDoc(doc(db, 'users', id));
-      if (docSnap.exists()) {
-        setSeller(docSnap.data() as UserProfile);
+      try {
+        const docSnap = await getDoc(doc(db, 'users', id));
+        if (cancelled) return;
+        if (docSnap.exists()) setSeller(docSnap.data() as UserProfile);
+        else useDemoSeller();
+      } catch (error) {
+        console.error('Seller read failed', error);
+        useDemoSeller();
       }
     };
 
-    // Fetch Seller Products
-    const q = query(
+    const productsQuery = query(
       collection(db, 'products'),
       where('sellerId', '==', id),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-      setProducts(prods);
-      setLoading(false);
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+      const prods = snapshot.docs
+        .map(entry => ({ id: entry.id, ...entry.data() } as Product))
+        .filter(product => product.status === 'active');
+      if (!cancelled) {
+        setProducts(prods.length > 0 ? prods : demoProductsAsProducts().filter(product => product.sellerId === id));
+        setLoading(false);
+      }
+    }, () => {
+      if (!cancelled) {
+        setProducts(demoProductsAsProducts().filter(product => product.sellerId === id));
+        setLoading(false);
+      }
     });
 
     fetchSeller();
-    return () => unsubscribe();
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 7000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      unsubscribe();
+    };
   }, [id]);
 
   useEffect(() => {
@@ -154,7 +179,7 @@ export const SellerProfile: React.FC = () => {
             <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-500 mt-2">
               <div className="flex items-center gap-1">
                 <Calendar size={16} />
-                <span>{t('seller.memberSince')} {format(seller.createdAt.toDate(), 'MMMM yyyy', { locale: getDateLocale() })}</span>
+                <span>{t('seller.memberSince')} {seller.createdAt?.toDate ? format(seller.createdAt.toDate(), 'MMMM yyyy', { locale: getDateLocale() }) : ''}</span>
               </div>
               <div className="flex items-center gap-1 text-emerald-600">
                 <Star size={16} fill="currentColor" />

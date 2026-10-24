@@ -1,13 +1,14 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth';
 import { Navbar } from './components/Navbar';
 import { Logo } from './components/Logo';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe } from 'lucide-react';
+import { CookieNotice } from './components/CookieNotice';
 
-const ProductList = lazy(() => import('./components/ProductList').then(m => ({ default: m.ProductList })));
+const HomePage = lazy(() => import('./components/HomePage').then(m => ({ default: m.HomePage })));
+const CategoryPage = lazy(() => import('./components/CategoryPage').then(m => ({ default: m.CategoryPage })));
 const ProductDetails = lazy(() => import('./components/ProductDetails').then(m => ({ default: m.ProductDetails })));
 const VendorDashboard = lazy(() => import('./components/VendorDashboard').then(m => ({ default: m.VendorDashboard })));
 const Chat = lazy(() => import('./components/Chat').then(m => ({ default: m.Chat })));
@@ -16,56 +17,11 @@ const SellerProfile = lazy(() => import('./components/SellerProfile').then(m => 
 const UserProfilePage = lazy(() => import('./components/UserProfilePage').then(m => ({ default: m.UserProfilePage })));
 const WishlistPage = lazy(() => import('./components/WishlistPage').then(m => ({ default: m.WishlistPage })));
 const BlogPage = lazy(() => import('./components/BlogPage').then(m => ({ default: m.BlogPage })));
+const BlogPostPage = lazy(() => import('./components/BlogPostPage').then(m => ({ default: m.BlogPostPage })));
 const TermsPage = lazy(() => import('./components/TermsPage').then(m => ({ default: m.TermsPage })));
-
-const LanguageSwitcher = () => {
-  const { i18n } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const languages = [
-    { code: 'pt', label: 'Português', flag: '🇵🇹' },
-    { code: 'en', label: 'English', flag: '🇬🇧' },
-    { code: 'es', label: 'Español', flag: '🇪🇸' },
-  ];
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className="bg-white/90 backdrop-blur-md p-2 rounded-2xl border border-gray-100 shadow-2xl flex flex-col gap-1 min-w-[160px]"
-          >
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => {
-                  i18n.changeLanguage(lang.code);
-                  setIsOpen(false);
-                }}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-3 ${
-                  i18n.language === lang.code
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-100'
-                    : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <span className="text-lg">{lang.flag}</span>
-                <span>{lang.label}</span>
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className={`bg-orange-600 text-white p-4 rounded-full shadow-xl hover:bg-orange-700 transition-all active:scale-95 flex items-center justify-center group ${isOpen ? 'rotate-12' : ''}`}
-      >
-        <Globe size={24} className="group-hover:scale-110 transition-transform" />
-      </button>
-    </div>
-  );
-};
+const PrivacyPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.PrivacyPage })));
+const HelpPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.HelpPage })));
+const ContactPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.ContactPage })));
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
@@ -86,9 +42,8 @@ function AppContent() {
   const { profile, updateRole } = useAuth();
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans selection:bg-orange-100 selection:text-orange-900">
+    <div className="min-h-screen bg-[#F6F0E6] font-sans text-[#2A241E] selection:bg-orange-100 selection:text-orange-900">
       <Navbar />
-      <LanguageSwitcher />
       
       {/* Role Selection Overlay for new users (Google Login users who haven't picked a role) */}
       <AnimatePresence>
@@ -131,7 +86,8 @@ function AppContent() {
       <main>
         <Suspense fallback={<div className="h-screen flex items-center justify-center text-stone-400">{t('common.loading')}</div>}>
         <Routes>
-          <Route path="/" element={<ProductList />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/seller/:id" element={<SellerProfile />} />
           <Route path="/login" element={<AuthForm mode="login" />} />
@@ -169,31 +125,34 @@ function AppContent() {
             } 
           />
           <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:id" element={<BlogPostPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Routes>
         </Suspense>
       </main>
 
-      <footer className="bg-white border-t border-gray-100 py-12 mt-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center mb-6">
-            <Logo className="h-8" />
+      <footer className="mt-8 border-t border-[#E7DDD0] py-12">
+        <div className="mx-auto max-w-7xl px-4 text-center">
+          <div className="mb-4 flex items-center justify-center">
+            <Logo />
           </div>
-          <p className="text-gray-500 text-sm mb-8 max-w-md mx-auto">
+          <p className="mx-auto mb-6 max-w-md text-sm text-[#6F655C]">
             {t('footer.tagline')}
           </p>
-          <div className="flex items-center justify-center gap-6 text-sm font-bold text-gray-400">
-            <Link to="/blog" className="hover:text-orange-600 transition-colors">{t('common.blog')}</Link>
-            <Link to="/terms" className="hover:text-orange-600 transition-colors">{t('common.terms')}</Link>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.privacy')}</a>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.help')}</a>
-            <a href="#" className="hover:text-orange-600 transition-colors">{t('common.contact')}</a>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-[#6F655C]">
+            <Link to="/blog" className="hover:text-[#C65D3B]">{t('common.blog')}</Link>
+            <Link to="/terms" className="hover:text-[#C65D3B]">{t('common.terms')}</Link>
+            <Link to="/privacy" className="hover:text-[#C65D3B]">{t('common.privacy')}</Link>
+            <Link to="/help" className="hover:text-[#C65D3B]">{t('common.help')}</Link>
+            <Link to="/contact" className="hover:text-[#C65D3B]">{t('common.contact')}</Link>
           </div>
-          <p className="text-gray-300 text-[10px] mt-12 uppercase tracking-widest font-black">
-            © 2026 CRAFTIVA.EU Inc. {t('footer.copyright')}
-          </p>
+          <p className="mt-8 text-xs text-[#A3988C]">© 2026 Craftiva.eu</p>
         </div>
       </footer>
+      <CookieNotice />
     </div>
   );
 }

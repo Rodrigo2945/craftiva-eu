@@ -67,6 +67,21 @@
       }
     }
     </script>
+    <!-- Restores the route after public/404.html redirects GitHub Pages to /?/path -->
+    <script>
+      (function (locationRef) {
+        if (locationRef.search[1] === '/') {
+          var decoded = locationRef.search
+            .slice(1)
+            .split('&')
+            .map(function (part) {
+              return part.replace(/~and~/g, '&');
+            })
+            .join('?');
+          window.history.replaceState(null, '', locationRef.pathname.slice(0, -1) + decoded + locationRef.hash);
+        }
+      })(window.location);
+    </script>
   </head>
   <body>
     <div id="root"></div>

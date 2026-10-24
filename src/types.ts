@@ -29,6 +29,8 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  moq?: number;
+  verified?: boolean;
   category: string;
   images: string[];
   status: ProductStatus;

@@ -7,6 +7,11 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'pt',
+    supportedLngs: ['pt', 'en', 'es'],
+    detection: {
+      order: ['localStorage', 'htmlTag'],
+      caches: ['localStorage'],
+    },
     debug: false,
     interpolation: {
       escapeValue: false,
